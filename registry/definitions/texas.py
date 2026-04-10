@@ -14,12 +14,12 @@ REGISTRY_META = {
     "wave":           1,
     "tier":           "1C",
     "complexity":     "high",
-    "status":         "stub",
+    "status":         "live_confirmed",
     "games":          ['pick3', 'pick4'],
     "draws_per_day":  4,
     "draw_times":     {'pick3': ['morning', 'day', 'evening', 'night'], 'pick4': ['morning', 'day', 'evening', 'night']},
     "game_names":     {'pick3': 'Pick 3', 'pick4': 'Daily 4'},
-    "slugs_verified": False,
+    "slugs_verified": True,
     "notes":          "HIGH COMPLEXITY: 4 draws/day (Morning, Day, Evening, Night). Pick 4 called 'Daily 4'. Validate schedule history; draw count changed over time.",
 }
 
