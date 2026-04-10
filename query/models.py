@@ -54,6 +54,13 @@ class DrawRecord:
     accepted_from_source: str
     accepted_source_priority: int
 
+    # Convenience alias so callers can use draw.source_name or
+    # draw.accepted_from_source interchangeably.  Both refer to the
+    # source that provided the accepted canonical winning number.
+    @property
+    def source_name(self) -> str:
+        return self.accepted_from_source
+
     @classmethod
     def from_row(cls, row) -> "DrawRecord":
         return cls(
@@ -190,3 +197,4 @@ class BatchBacktestResponse:
     total_draws_searched:  int
     jobs_with_hits:        int
     aggregate_summary:     str
+    
