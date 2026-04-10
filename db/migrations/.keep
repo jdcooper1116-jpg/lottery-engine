@@ -1,0 +1,4 @@
+-- lottery_engine/db/migrations/README.md
+-- Place versioned ALTER TABLE scripts here.
+-- Naming convention: NNNN_description.sql (e.g. 0001_add_draw_label.sql)
+-- Run scripts in order on existing databases when upgrading.
