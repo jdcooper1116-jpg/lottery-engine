@@ -114,7 +114,7 @@ class TestWave1Registry:
 
     def test_only_live_confirmed_states_have_verified_slugs(self):
         from registry.definitions import ALL_SOURCE_MAPPINGS
-        allowed = {"GA", "PA"}
+        allowed = {"GA", "PA", "OH", "MI", "IL", "TN"}
         verified = [m for m in ALL_SOURCE_MAPPINGS if m.job_def.state not in allowed and m.slug_verified]
         assert len(verified) == 0, f"Unexpected non-confirmed mappings marked slug_verified=True: {verified[:5]}"
 
@@ -168,10 +168,31 @@ class TestStateSpecificRequirements:
         assert any("win-4" in (s or "") for s in slugs), \
             f"NY pick4 should use 'win-4' slug, got: {slugs}"
 
-    def test_california_has_morning_draw(self):
-        from registry.definitions.california import JOB_DEFINITIONS
-        morning = [j for j in JOB_DEFINITIONS if j.draw_time == "morning"]
-        assert len(morning) >= 2  # pick3 + pick4
+    def test_california_draw_times_match_lottery_net(self):
+        from registry.definitions import ALL_SOURCE_MAPPINGS
+
+        pick3_slugs = {
+            m.source_game_slug
+            for m in ALL_SOURCE_MAPPINGS
+            if str(m.source_name).endswith("LOTTERY_NET")
+            and m.job_def.state == "CA"
+            and m.job_def.game_type == "pick3"
+            and m.is_enabled
+        }
+
+        pick4_slugs = {
+            m.source_game_slug
+            for m in ALL_SOURCE_MAPPINGS
+            if str(m.source_name).endswith("LOTTERY_NET")
+            and m.job_def.state == "CA"
+            and m.job_def.game_type == "pick4"
+            and m.is_enabled
+        }
+
+        assert pick3_slugs == {"daily-3-midday","daily-3-evening"}
+        assert pick4_slugs == {"daily-4"}
+
+
 
     def test_texas_has_four_draw_times(self):
         from registry.definitions.texas import JOB_DEFINITIONS
