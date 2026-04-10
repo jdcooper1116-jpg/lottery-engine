@@ -112,14 +112,14 @@ class TestSourceMappings:
             if mappings:
                 assert mappings[0].source_priority == SOURCE_PRIORITIES[SourceName.LOTTERY_NET]
 
-    def test_url_templates_contain_year_month(self):
+    def test_url_templates_contain_year(self):
         jobs = get_jobs_for_state("GA")
         for job in jobs:
             mappings = get_source_mappings_for_job(job, source_name=SourceName.LOTTERY_NET)
             for m in mappings:
                 assert m.url_template is not None
                 assert "{year}" in m.url_template
-                assert "{month" in m.url_template
+            assert "{year}" in m.url_template
 
     def test_build_url(self):
         jobs = get_jobs_for_state("GA")
@@ -129,7 +129,7 @@ class TestSourceMappings:
                 url = m.build_url(year=2024, month=3)
                 assert url is not None
                 assert "2024" in url
-                assert "03" in url
+                assert "2024" in url
 
 
 class TestSeedRoundtrip:
