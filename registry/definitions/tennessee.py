@@ -14,12 +14,12 @@ REGISTRY_META = {
     "wave":           1,
     "tier":           "1B",
     "complexity":     "standard",
-    "status":         "stub",
+    "status":         "live_confirmed",
     "games":          ['pick3', 'pick4'],
     "draws_per_day":  2,
     "draw_times":     {'pick3': ['midday', 'evening'], 'pick4': ['midday', 'evening']},
     "game_names":     {'pick3': 'Cash 3', 'pick4': 'Cash 4'},
-    "slugs_verified": False,
+    "slugs_verified": True,
     "notes":          "TN uses 'Cash 3' and 'Cash 4' like Georgia. No night draw.",
 }
 

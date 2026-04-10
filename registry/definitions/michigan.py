@@ -14,12 +14,12 @@ REGISTRY_META = {
     "wave":           1,
     "tier":           "1B",
     "complexity":     "standard",
-    "status":         "stub",
+    "status":         "live_confirmed",
     "games":          ['pick3', 'pick4'],
     "draws_per_day":  2,
     "draw_times":     {'pick3': ['midday', 'evening'], 'pick4': ['midday', 'evening']},
     "game_names":     {'pick3': 'Daily 3', 'pick4': 'Daily 4'},
-    "slugs_verified": False,
+    "slugs_verified": True,
     "notes":          "MI uses 'Daily 3' (pick3) and 'Daily 4' (pick4). Midday and Evening.",
 }
 
