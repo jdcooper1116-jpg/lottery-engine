@@ -27,13 +27,13 @@ WAVE1_STATES = ["GA","FL","NY","PA","OH","MI","IL","TN","CA","TX","OR"]
 
 class TestWave1Registry:
     def test_all_wave1_states_importable(self):
-        from registry.definitions import ALL_JOB_DEFINITIONS
+        from registry.definitions import ALL_JOB_DEFINITIONS, ALL_SOURCE_MAPPINGS, ALL_SOURCE_MAPPINGS
         present = {j.state for j in ALL_JOB_DEFINITIONS}
         for state in WAVE1_STATES:
             assert state in present, f"{state} missing from registry"
 
     def test_total_job_count(self):
-        from registry.definitions import ALL_JOB_DEFINITIONS
+        from registry.definitions import ALL_JOB_DEFINITIONS, ALL_SOURCE_MAPPINGS, ALL_SOURCE_MAPPINGS
         assert len(ALL_JOB_DEFINITIONS) >= 50
 
     def test_total_mapping_count(self):
@@ -41,7 +41,7 @@ class TestWave1Registry:
         assert len(ALL_SOURCE_MAPPINGS) >= 148
 
     def test_every_state_has_jobs(self):
-        from registry.definitions import ALL_JOB_DEFINITIONS
+        from registry.definitions import ALL_JOB_DEFINITIONS, ALL_SOURCE_MAPPINGS, ALL_SOURCE_MAPPINGS
         counts = {}
         for j in ALL_JOB_DEFINITIONS:
             counts[j.state] = counts.get(j.state, 0) + 1
@@ -59,7 +59,7 @@ class TestWave1Registry:
             assert by_state.get(state), f"{state} has no lottery.net mapping"
 
     def test_all_draw_times_are_canonical(self):
-        from registry.definitions import ALL_JOB_DEFINITIONS
+        from registry.definitions import ALL_JOB_DEFINITIONS, ALL_SOURCE_MAPPINGS, ALL_SOURCE_MAPPINGS
         from registry.enums import DrawTime
         valid = DrawTime.values()
         for j in ALL_JOB_DEFINITIONS:
@@ -68,7 +68,7 @@ class TestWave1Registry:
             )
 
     def test_all_game_types_are_canonical(self):
-        from registry.definitions import ALL_JOB_DEFINITIONS
+        from registry.definitions import ALL_JOB_DEFINITIONS, ALL_SOURCE_MAPPINGS, ALL_SOURCE_MAPPINGS
         from registry.enums import GameType
         valid = GameType.values()
         for j in ALL_JOB_DEFINITIONS:
@@ -77,7 +77,7 @@ class TestWave1Registry:
             )
 
     def test_canonical_time_key_matches_draw_time(self):
-        from registry.definitions import ALL_JOB_DEFINITIONS
+        from registry.definitions import ALL_JOB_DEFINITIONS, ALL_SOURCE_MAPPINGS, ALL_SOURCE_MAPPINGS
         for j in ALL_JOB_DEFINITIONS:
             assert j.canonical_time_key == j.draw_time, (
                 f"{j.draw_label}: canonical_time_key {j.canonical_time_key!r} "
@@ -112,21 +112,11 @@ class TestWave1Registry:
             f"Only {len(verified)}/6 GA lottery.net mappings are slug_verified=True"
         )
 
-    def test_non_georgia_slugs_not_verified(self):
-        """All non-GA states should have slug_verified=False until confirmed live."""
-        import importlib
-        for state, mod_name in [
-            ("FL", "registry.definitions.florida"),
-            ("NY", "registry.definitions.new_york"),
-            ("PA", "registry.definitions.pennsylvania"),
-        ]:
-            mod = importlib.import_module(mod_name)
-            maps = getattr(mod, "SOURCE_MAPPINGS", [])
-            verified = [m for m in maps if getattr(m, "slug_verified", False)]
-            assert len(verified) == 0, (
-                f"{state}: {len(verified)} mappings marked slug_verified=True "
-                "before live confirmation"
-            )
+    def test_only_live_confirmed_states_have_verified_slugs(self):
+        from registry.definitions import ALL_SOURCE_MAPPINGS
+        allowed = {"GA", "PA"}
+        verified = [m for m in ALL_SOURCE_MAPPINGS if m.job_def.state not in allowed and m.slug_verified]
+        assert len(verified) == 0, f"Unexpected non-confirmed mappings marked slug_verified=True: {verified[:5]}"
 
     def test_slug_verified_field_on_source_job_mapping(self):
         import dataclasses
@@ -392,7 +382,7 @@ class TestValidateStateWithData:
             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""", rows)
         conn.commit()
         # Seed registry too
-        from registry.definitions import ALL_JOB_DEFINITIONS, ALL_SOURCE_MAPPINGS
+        from registry.definitions import ALL_JOB_DEFINITIONS, ALL_SOURCE_MAPPINGS, ALL_SOURCE_MAPPINGS, ALL_SOURCE_MAPPINGS
         from registry.seed import seed_job_definitions, seed_source_mappings
         from db.connection import get_connection
         with get_connection(db_path) as c:

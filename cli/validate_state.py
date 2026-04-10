@@ -356,8 +356,13 @@ def validate_state(
         )
         new_obs   = summary["observations_written"]
         new_draws = (summary.get("reconcile_stats") or {}).get("accepted", 0)
-        cl.add("Ingest: observations written", STATUS_PASS if new_obs > 0 else STATUS_WARN,
-               f"{new_obs} new observations, {new_draws} new canonical draws")
+        # Zero observations is a hard fail — likely 404 on the URL
+        obs_status = STATUS_PASS if new_obs > 0 else STATUS_FAIL
+        cl.add("Ingest: observations written", obs_status,
+               f"{new_obs} new observations, {new_draws} new canonical draws" +
+               ("" if new_obs > 0 else
+                "\n  Parser returned 0 rows. Likely causes: wrong slug (404), "
+                "changed page structure, or source has no data for this month."))
         if new_obs == 0 and not skip_ingest:
             cl.add("Ingest returned 0 rows", STATUS_FAIL,
                    "Parser returned no data. Check slug and page structure.")
@@ -388,11 +393,23 @@ def validate_state(
 
     if not rows:
         cl.add("Draw time coverage", STATUS_FAIL,
-               f"No draws found in {month} for {state}")
+               f"No draws found in {month} for {state}. "
+               "Check that ingest ran and returned results.")
     else:
         time_counts = {(r["game_type"], r["draw_time"]): r["cnt"] for r in rows}
         detail_lines = []
-        all_times_ok = True
+        any_zero    = False   # at least one draw_time has 0 rows → FAIL
+        any_low     = False   # at least one draw_time is low but > 0 → WARN
+
+        # Build a quick lookup of lottery.net slugs for hint messages
+        from registry.definitions import ALL_SOURCE_MAPPINGS
+        from registry.enums import SourceName as _SN
+        slug_lookup = {
+            (m.job_def.game_type, m.job_def.draw_time): m.source_game_slug
+            for m in ALL_SOURCE_MAPPINGS
+            if m.job_def.state == state and m.source_name == _SN.LOTTERY_NET
+        }
+
         for g in games:
             expected_times = sorted(set(
                 j.draw_time for j in get_jobs_for_state(state, game_type=g,
@@ -400,12 +417,39 @@ def validate_state(
             ))
             for dt in expected_times:
                 cnt = time_counts.get((g, dt), 0)
-                flag = "✓" if cnt >= MIN_DRAWS_PER_TIME else "⚠ low"
-                detail_lines.append(f"{g}/{dt}: {cnt} draws {flag}")
-                if cnt < MIN_DRAWS_PER_TIME:
-                    all_times_ok = False
+                if cnt == 0:
+                    any_zero = True
+                    slug = slug_lookup.get((g, dt), "?")
+                    # Use source_state_slug from the mapping for the correct URL path
+                    from registry.definitions import ALL_SOURCE_MAPPINGS as _ALL_MAPS
+                    from registry.enums import SourceName as _SN
+                    _state_slug = next(
+                        (m.source_state_slug for m in _ALL_MAPS
+                         if m.job_def.state == state and m.source_name == _SN.LOTTERY_NET
+                         and m.source_state_slug),
+                        state.lower()
+                    )
+                    url = f"https://www.lottery.net/{_state_slug}/{slug}/numbers/{start_date.year}"
+                    # Prepend to detail_lines so MISSING items appear first → shows in REASON
+                    detail_lines.insert(0,
+                        f"{g}/{dt}: 0 draws ✗ MISSING — "
+                        f"possible 404 or wrong slug '{slug}'\n"
+                        f"  check → {url}"
+                    )
+                elif cnt < MIN_DRAWS_PER_TIME:
+                    any_low = True
+                    detail_lines.append(f"{g}/{dt}: {cnt} draws ⚠ low (expected >= {MIN_DRAWS_PER_TIME})")
+                else:
+                    detail_lines.append(f"{g}/{dt}: {cnt} draws ✓")
 
-        status = STATUS_PASS if all_times_ok else STATUS_WARN
+        if any_zero:
+            # Zero rows on any draw_time is a hard failure — wrong URL or parser error
+            status = STATUS_FAIL
+        elif any_low:
+            status = STATUS_WARN
+        else:
+            status = STATUS_PASS
+
         cl.add("Draw time coverage", status, "\n".join(detail_lines))
 
     # Sample results (last 8 draws)
