@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import Counter
 from typing import Callable
 
 EXACT = "exact"
@@ -21,8 +20,8 @@ def _box(candidate: str, winning: str) -> bool:
 
 def _digit_presence(candidate: str, winning: str) -> bool:
     """
-    Digit presence match: candidate must appear in winning as an ordered
-    digit sequence. Leading zeros matter because we compare raw chars.
+    DIGIT/PRESENCE mode:
+    candidate must appear in winning as an ordered contiguous digit sequence.
 
     Examples:
       "03" in "034" -> True

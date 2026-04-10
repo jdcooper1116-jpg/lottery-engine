@@ -112,7 +112,7 @@ class TestSourceMappings:
             if mappings:
                 assert mappings[0].source_priority == SOURCE_PRIORITIES[SourceName.LOTTERY_NET]
 
-    def test_url_templates_contain_year(self):
+    def test_url_templates_contain_year_month(self):
         jobs = get_jobs_for_state("GA")
         for job in jobs:
             mappings = get_source_mappings_for_job(job, source_name=SourceName.LOTTERY_NET)

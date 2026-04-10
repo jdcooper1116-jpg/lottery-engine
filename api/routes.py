@@ -306,6 +306,7 @@ def _draw_to_dict(d) -> dict:
         "sorted_digits":          d.sorted_digits,
         "is_verified":            d.is_verified,
         "has_conflict":           d.has_conflict,
+        "source_name":            d.source_name,
         "accepted_from_source":   d.accepted_from_source,
     }
 
@@ -318,6 +319,8 @@ def _hit_to_dict(h) -> dict:
         "winning_number": h.winning_number,
         "match_type":     h.match_type,
         "is_verified":    h.is_verified,
+        "source_name":    h.source_name,
+        "canonical_key":  h.canonical_key,
     }
 
 

@@ -546,4 +546,3 @@ def _make_result(
         raw_draw_time_label=raw_label or mapping.source_draw_time_label or draw_time,
         scraped_at=scraped_at,
     )
-    

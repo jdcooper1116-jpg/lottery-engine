@@ -507,3 +507,112 @@ class TestServiceIntegration:
         labels = [r.request.label for r in batch_resp.results]
         assert "dream-A" in labels
         assert "dream-B" in labels
+
+# ---------------------------------------------------------------
+# Source provenance on DrawRecord
+# ---------------------------------------------------------------
+
+class TestDrawRecordSourceProvenance:
+    """
+    source_name is a @property alias for accepted_from_source.
+    Both must be present and identical on every DrawRecord.
+    """
+
+    def test_source_name_attribute_exists(self, sample_draws):
+        from query.models import DrawRecord
+        row = sample_draws.execute("SELECT * FROM draws LIMIT 1").fetchone()
+        record = DrawRecord.from_row(row)
+        assert hasattr(record, "source_name"), "DrawRecord missing source_name"
+
+    def test_source_name_equals_accepted_from_source(self, sample_draws):
+        from query.models import DrawRecord
+        rows = sample_draws.execute("SELECT * FROM draws").fetchall()
+        for row in rows:
+            record = DrawRecord.from_row(row)
+            assert record.source_name == record.accepted_from_source, (
+                f"Mismatch on {record.canonical_key}: "
+                f"source_name={record.source_name!r} "
+                f"accepted_from_source={record.accepted_from_source!r}"
+            )
+
+    def test_source_name_is_property_not_field(self):
+        import dataclasses
+        from query.models import DrawRecord
+        field_names = [f.name for f in dataclasses.fields(DrawRecord)]
+        assert "source_name" not in field_names, (
+            "source_name should be a @property, not a dataclass field"
+        )
+        assert "accepted_from_source" in field_names, (
+            "accepted_from_source must remain as the backing dataclass field"
+        )
+        assert hasattr(DrawRecord, "source_name"), (
+            "DrawRecord must expose source_name as a property"
+        )
+
+    def test_source_name_non_empty(self, sample_draws):
+        from query.models import DrawRecord
+        rows = sample_draws.execute("SELECT * FROM draws").fetchall()
+        for row in rows:
+            record = DrawRecord.from_row(row)
+            assert record.source_name, (
+                f"source_name is empty/None on {record.canonical_key}"
+            )
+
+    def test_source_name_reflects_correct_source(self, sample_draws):
+        from query.models import DrawRecord
+        # sample_draws has rows from lottery.net and lotterycorner.com
+        rows = sample_draws.execute(
+            "SELECT * FROM draws WHERE accepted_from_source='lotterycorner.com' LIMIT 1"
+        ).fetchone()
+        if rows:
+            record = DrawRecord.from_row(rows)
+            assert record.source_name == "lotterycorner.com"
+
+    def test_user_print_loop_runs(self, sample_draws):
+        """Exact snippet from the feature request must execute without AttributeError."""
+        from query.models import DrawRecord
+        rows = sample_draws.execute(
+            "SELECT * FROM draws ORDER BY draw_date, draw_time LIMIT 15"
+        ).fetchall()
+        draws = [DrawRecord.from_row(r) for r in rows]
+
+        # This is the exact code the user reported wanting to use:
+        output = []
+        for draw in draws[:15]:
+            output.append(
+                (draw.draw_date, draw.draw_time, draw.winning_number, draw.source_name)
+            )
+        assert len(output) > 0
+        for row in output:
+            assert row[3], f"source_name blank for {row}"
+
+    def test_source_name_in_api_serializer(self):
+        """_draw_to_dict must include source_name in its output dict."""
+        from api.routes import _draw_to_dict
+        from query.models import DrawRecord
+        from datetime import datetime, timezone
+        import sqlite3, pathlib
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        base = pathlib.Path("db")
+        conn.executescript((base / "schema.sql").read_text())
+        now = datetime.now(timezone.utc).isoformat()
+        conn.execute(
+            """INSERT INTO draws (
+                canonical_key,state,game_type,draw_date,draw_time,
+                winning_number,digit_count,sorted_digits,
+                accepted_from_source,accepted_source_priority,
+                is_verified,has_conflict,accepted_at
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            ("GA|pick3|2024-01-01|midday","GA","pick3","2024-01-01","midday",
+             "123",3,"123","lottery.net",1,1,0,now),
+        )
+        conn.commit()
+        row = conn.execute("SELECT * FROM draws LIMIT 1").fetchone()
+        record = DrawRecord.from_row(row)
+        d = _draw_to_dict(record)
+        assert "source_name" in d, f"source_name missing from _draw_to_dict output: {list(d)}"
+        assert d["source_name"] == "lottery.net"
+        assert "accepted_from_source" in d, "accepted_from_source must also remain in output"
+        conn.close()
+

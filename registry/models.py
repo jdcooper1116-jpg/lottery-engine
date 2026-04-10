@@ -75,6 +75,7 @@ class SourceJobMapping:
     source_min_year:        Optional[int]  = None
     source_max_year:        Optional[int]  = None
     is_enabled:             bool           = True
+    slug_verified:          bool           = False  # True once confirmed on live site
     notes:                  str            = ""
     db_id:                  Optional[int]  = field(default=None, repr=False)
 
