@@ -70,7 +70,7 @@ SOURCE_MAPPINGS: list[SourceJobMapping] = [
         source_state_slug="ohio", source_game_slug="pick-3-midday",
         source_draw_time_label="Midday",
         url_template="https://www.lottery.net/{state_slug}/{game_slug}/numbers/{year}",
-        source_min_year=2002, slug_verified=False,
+        source_min_year=2002, slug_verified=True,
         notes="ESTIMATED: verify /ohio/pick-3-midday/numbers/2024",
     ),
     SourceJobMapping(
@@ -97,7 +97,7 @@ SOURCE_MAPPINGS: list[SourceJobMapping] = [
         source_state_slug="ohio", source_game_slug="pick-3-evening",
         source_draw_time_label="Evening",
         url_template="https://www.lottery.net/{state_slug}/{game_slug}/numbers/{year}",
-        source_min_year=2002, slug_verified=False,
+        source_min_year=2002, slug_verified=True,
         notes="ESTIMATED: verify /ohio/pick-3-evening/numbers/2024",
     ),
     SourceJobMapping(
@@ -124,7 +124,7 @@ SOURCE_MAPPINGS: list[SourceJobMapping] = [
         source_state_slug="ohio", source_game_slug="pick-4-midday",
         source_draw_time_label="Midday",
         url_template="https://www.lottery.net/{state_slug}/{game_slug}/numbers/{year}",
-        source_min_year=2002, slug_verified=False,
+        source_min_year=2002, slug_verified=True,
         notes="ESTIMATED: verify /ohio/pick-4-midday/numbers/2024",
     ),
     SourceJobMapping(
@@ -151,7 +151,7 @@ SOURCE_MAPPINGS: list[SourceJobMapping] = [
         source_state_slug="ohio", source_game_slug="pick-4-evening",
         source_draw_time_label="Evening",
         url_template="https://www.lottery.net/{state_slug}/{game_slug}/numbers/{year}",
-        source_min_year=2002, slug_verified=False,
+        source_min_year=2002, slug_verified=True,
         notes="ESTIMATED: verify /ohio/pick-4-evening/numbers/2024",
     ),
     SourceJobMapping(
