@@ -1,7 +1,7 @@
 state_code,state_name,done,validated,promoted,stub,blocked_special_case,notes
 AZ,Arizona,,,,,,not started
 AR,Arkansas,,,,,,not started
-CA,California,yes,yes,no,yes,yes,validated but keep stub for now
+CA,California,yes,yes,no,yes,yes,validated but still stub/special-case
 CO,Colorado,,,,,,not started
 CT,Connecticut,,,,,,not started
 DE,Delaware,,,,,,not started
