@@ -1,12 +1,2 @@
 state_code,state_name,done,validated,promoted,stub,blocked_special_case,notes
 GA,Georgia,done,validated,promoted,,,Core state completed first.
-CA,California,done,validated,,stub,special-case,"Aligned and tested, but still intentionally stub."
-OH,Ohio,done,validated,promoted,,,Metadata promoted after lottery.net validation.
-TX,Texas,done,validated,promoted,,,Metadata promoted after lottery.net validation.
-IL,Illinois,done,validated,promoted,,,Metadata promoted after lottery.net validation.
-MI,Michigan,done,validated,promoted,,,Metadata promoted after lottery.net validation.
-TN,Tennessee,done,validated,promoted,,,Metadata promoted after lottery.net validation.
-PA,Pennsylvania,validated,,,,,Earlier verified work; recheck final metadata later.
-FL,Florida,,,,,,In registry with lottery.net coverage; not reviewed in this pass.
-NY,New York,,,,,,In registry with lottery.net coverage; not reviewed in this pass.
-OR,Oregon,,partial,,stub,special-case,Pick4-only/four-draw complexity; save for final pass.
