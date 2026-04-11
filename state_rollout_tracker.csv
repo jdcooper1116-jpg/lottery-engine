@@ -1,2 +1,40 @@
 state_code,state_name,done,validated,promoted,stub,blocked_special_case,notes
-GA,Georgia,done,validated,promoted,,,Core state completed first.
+AZ,Arizona,,,,,,not started
+AR,Arkansas,,,,,,not started
+CA,California,yes,yes,no,yes,yes,validated but keep stub for now
+CO,Colorado,,,,,,not started
+CT,Connecticut,,,,,,not started
+DE,Delaware,,,,,,not started
+FL,Florida,,,,,,not started
+GA,Georgia,yes,yes,yes,no,no,core state completed first
+ID,Idaho,,,,,,not started
+IL,Illinois,yes,yes,yes,no,no,promoted after validation
+IN,Indiana,,,,,,not started
+IA,Iowa,,,,,,not started
+KS,Kansas,,,,,,not started
+KY,Kentucky,,,,,,not started
+LA,Louisiana,,,,,,not started
+MD,Maryland,,,,,,not started
+MA,Massachusetts,,,,,,not started
+MI,Michigan,yes,yes,yes,no,no,promoted after validation
+MN,Minnesota,,,,,,not started
+MS,Mississippi,,,,,,not started
+MO,Missouri,,,,,,not started
+NE,Nebraska,,,,,,not started
+NJ,New Jersey,,,,,,not started
+NM,New Mexico,,,,,,not started
+NY,New York,,,,,,not started
+NC,North Carolina,,,,,,not started
+OH,Ohio,yes,yes,yes,no,no,promoted after validation
+OK,Oklahoma,,,,,,not started
+OR,Oregon,no,partial,no,yes,yes,special-case final pass
+PA,Pennsylvania,,yes,,,,validated earlier; check metadata later
+RI,Rhode Island,,,,,,not started
+SC,South Carolina,,,,,,not started
+TN,Tennessee,yes,yes,yes,no,no,promoted after validation
+TX,Texas,yes,yes,yes,no,no,promoted after validation
+VA,Virginia,,,,,,not started
+WA,Washington,,,,,,not started
+DC,Washington D.C.,,,,,,not started
+WV,West Virginia,,,,,,not started
+WI,Wisconsin,,,,,,not started
