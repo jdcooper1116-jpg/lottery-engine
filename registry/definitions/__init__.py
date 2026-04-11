@@ -29,18 +29,26 @@ from .kentucky       import JOB_DEFINITIONS as _KY_J, SOURCE_MAPPINGS as _KY_M
 from .nebraska       import JOB_DEFINITIONS as _NE_J, SOURCE_MAPPINGS as _NE_M
 from .rhode_island   import JOB_DEFINITIONS as _RI_J, SOURCE_MAPPINGS as _RI_M
 from .west_virginia  import JOB_DEFINITIONS as _WV_J, SOURCE_MAPPINGS as _WV_M
+from .arizona        import JOB_DEFINITIONS as _AZ_J, SOURCE_MAPPINGS as _AZ_M
+from .arkansas       import JOB_DEFINITIONS as _AR_J, SOURCE_MAPPINGS as _AR_M
+from .colorado       import JOB_DEFINITIONS as _CO_J, SOURCE_MAPPINGS as _CO_M
+from .louisiana      import JOB_DEFINITIONS as _LA_J, SOURCE_MAPPINGS as _LA_M
+from .missouri       import JOB_DEFINITIONS as _MO_J, SOURCE_MAPPINGS as _MO_M
+from .oklahoma       import JOB_DEFINITIONS as _OK_J, SOURCE_MAPPINGS as _OK_M
 
 ALL_JOB_DEFINITIONS = (
     _GA_J + _FL_J + _NY_J + _PA_J + _OH_J + _MI_J +
     _IL_J + _TN_J + _CA_J + _TX_J + _OR_J +
     _CT_J + _DE_J + _IN_J + _MD_J + _SC_J + _WI_J +
-    _IA_J + _KS_J + _KY_J + _NE_J + _RI_J + _WV_J
+    _IA_J + _KS_J + _KY_J + _NE_J + _RI_J + _WV_J +
+    _AZ_J + _AR_J + _CO_J + _LA_J + _MO_J + _OK_J
 )
 ALL_SOURCE_MAPPINGS = (
     _GA_M + _FL_M + _NY_M + _PA_M + _OH_M + _MI_M +
     _IL_M + _TN_M + _CA_M + _TX_M + _OR_M +
     _CT_M + _DE_M + _IN_M + _MD_M + _SC_M + _WI_M +
-    _IA_M + _KS_M + _KY_M + _NE_M + _RI_M + _WV_M
+    _IA_M + _KS_M + _KY_M + _NE_M + _RI_M + _WV_M +
+    _AZ_M + _AR_M + _CO_M + _LA_M + _MO_M + _OK_M
 )
 
 __all__ = ["ALL_JOB_DEFINITIONS", "ALL_SOURCE_MAPPINGS"]
