@@ -1,12 +1,12 @@
-state_code,state_name,done,validated,promoted,stub,blocked_special_case,not_started,notes
-GA,Georgia,yes,yes,yes,no,no,no,Core state. Completed earlier in rollout.
-CA,California,yes,yes,no,yes,yes,no,"Aligned and tests green, but remains special-case/stub."
-OH,Ohio,yes,yes,yes,no,no,no,Validated and metadata promoted.
-TX,Texas,yes,yes,yes,no,no,no,Validated for pick3/pick4 and metadata promoted.
-IL,Illinois,yes,yes,yes,no,no,no,Validated and metadata promoted.
-MI,Michigan,yes,yes,yes,no,no,no,Validated and metadata promoted.
-TN,Tennessee,yes,yes,yes,no,no,no,Validated and metadata promoted.
-OR,Oregon,no,partial,no,yes,yes,no,Pick4-only special case; official schedule more complex; save for final pass.
-FL,Florida,no,unknown,no,unknown,no,no,In registry with lottery.net coverage; review next.
-NY,New York,no,unknown,no,unknown,no,no,In registry with lottery.net coverage; review next.
-PA,Pennsylvania,no,yes,unknown,unknown,no,no,Verified earlier; metadata status should be checked.
+state_code,state_name,done,validated,promoted,stub,blocked_special_case,notes
+GA,Georgia,done,validated,promoted,,,Core state completed first.
+CA,California,done,validated,,stub,special-case,"Aligned and tested, but still intentionally stub."
+OH,Ohio,done,validated,promoted,,,Metadata promoted after lottery.net validation.
+TX,Texas,done,validated,promoted,,,Metadata promoted after lottery.net validation.
+IL,Illinois,done,validated,promoted,,,Metadata promoted after lottery.net validation.
+MI,Michigan,done,validated,promoted,,,Metadata promoted after lottery.net validation.
+TN,Tennessee,done,validated,promoted,,,Metadata promoted after lottery.net validation.
+PA,Pennsylvania,validated,,,,,Earlier verified work; recheck final metadata later.
+FL,Florida,,,,,,In registry with lottery.net coverage; not reviewed in this pass.
+NY,New York,,,,,,In registry with lottery.net coverage; not reviewed in this pass.
+OR,Oregon,,partial,,stub,special-case,Pick4-only/four-draw complexity; save for final pass.
