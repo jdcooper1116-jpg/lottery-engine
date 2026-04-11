@@ -45,6 +45,9 @@ from .virginia       import JOB_DEFINITIONS as _VA_J, SOURCE_MAPPINGS as _VA_M
 from .washington_dc  import JOB_DEFINITIONS as _DC_J, SOURCE_MAPPINGS as _DC_M
 from .mississippi    import JOB_DEFINITIONS as _MS_J, SOURCE_MAPPINGS as _MS_M
 from .minnesota      import JOB_DEFINITIONS as _MN_J, SOURCE_MAPPINGS as _MN_M
+# Wave 2 — Special batch B
+from .massachusetts  import JOB_DEFINITIONS as _MA_J, SOURCE_MAPPINGS as _MA_M
+from .washington     import JOB_DEFINITIONS as _WA_J, SOURCE_MAPPINGS as _WA_M
 
 ALL_JOB_DEFINITIONS = (
     _GA_J + _FL_J + _NY_J + _PA_J + _OH_J + _MI_J +
@@ -53,7 +56,8 @@ ALL_JOB_DEFINITIONS = (
     _IA_J + _KS_J + _KY_J + _NE_J + _RI_J + _WV_J +
     _AZ_J + _AR_J + _CO_J + _LA_J + _MO_J + _OK_J +
     _ID_J + _NJ_J + _NM_J + _NC_J + _VA_J +
-    _DC_J + _MS_J + _MN_J
+    _DC_J + _MS_J + _MN_J +
+    _MA_J + _WA_J
 )
 ALL_SOURCE_MAPPINGS = (
     _GA_M + _FL_M + _NY_M + _PA_M + _OH_M + _MI_M +
@@ -62,7 +66,8 @@ ALL_SOURCE_MAPPINGS = (
     _IA_M + _KS_M + _KY_M + _NE_M + _RI_M + _WV_M +
     _AZ_M + _AR_M + _CO_M + _LA_M + _MO_M + _OK_M +
     _ID_M + _NJ_M + _NM_M + _NC_M + _VA_M +
-    _DC_M + _MS_M + _MN_M
+    _DC_M + _MS_M + _MN_M +
+    _MA_M + _WA_M
 )
 
 __all__ = ["ALL_JOB_DEFINITIONS", "ALL_SOURCE_MAPPINGS"]
