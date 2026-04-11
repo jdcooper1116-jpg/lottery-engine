@@ -1,103 +1,104 @@
 """
 lottery_engine/registry/definitions/oregon.py
-Oregon Lottery — stub for Wave 1.
-Status: STUB — all slugs ESTIMATED. Verify with dry-run before ingesting.
-Notes: HIGH COMPLEXITY: Oregon may not have a Pick 3 equivalent. Confirm game availability before ingesting.
+Oregon Lottery — special-case stub for Wave 2.
+Status: STUB — slugs ESTIMATED. Verify with dry-run before ingesting.
+Notes: Oregon appears to offer Pick 4 only on lottery.net, with four daily draw times.
+Mapped to canonical internal draw_time buckets:
+1PM -> midday, 4PM -> day, 7PM -> evening, 10PM -> night.
 """
-from datetime import date
 from ..models import DrawJobDef, SourceJobMapping
 from ..enums import SourceName, SOURCE_PRIORITIES
 
 REGISTRY_META = {
     "state_code":     "OR",
     "state_name":     "Oregon",
-    "wave":           1,
-    "tier":           "1C",
+    "wave":           2,
+    "tier":           "special",
     "complexity":     "high",
     "status":         "stub",
     "games":          ['pick4'],
-    "draws_per_day":  2,
-    "draw_times":     {'pick4': ['midday', 'evening']},
+    "draws_per_day":  4,
+    "draw_times":     {'pick4': ['midday', 'day', 'evening', 'night']},
     "game_names":     {'pick4': 'Pick 4'},
     "slugs_verified": False,
-    "notes":          'HIGH COMPLEXITY: Oregon may not have a Pick 3 equivalent. Confirm game availability before ingesting.',
+    "notes":          "Special-case: Oregon Pick 4 only. 1PM->midday, 4PM->day, 7PM->evening, 10PM->night.",
 }
 
-_OR_PICK4_MIDDAY = DrawJobDef(
+_OR_PICK4_1PM = DrawJobDef(
     state="OR", game_type="pick4", draw_time="midday",
-    draw_label="Oregon Pick 4 Midday", schedule_version="v1",
+    draw_label="Oregon Pick 4 1PM", schedule_version="v1",
     active_start_date=None, active_end_date=None,
     source_min_year=2002, source_max_year=None,
     draw_days="daily", canonical_time_key="midday",
     notes="STUB",
 )
-_OR_PICK4_EVENING = DrawJobDef(
+_OR_PICK4_4PM = DrawJobDef(
+    state="OR", game_type="pick4", draw_time="day",
+    draw_label="Oregon Pick 4 4PM", schedule_version="v1",
+    active_start_date=None, active_end_date=None,
+    source_min_year=2002, source_max_year=None,
+    draw_days="daily", canonical_time_key="day",
+    notes="STUB",
+)
+_OR_PICK4_7PM = DrawJobDef(
     state="OR", game_type="pick4", draw_time="evening",
-    draw_label="Oregon Pick 4 Evening", schedule_version="v1",
+    draw_label="Oregon Pick 4 7PM", schedule_version="v1",
     active_start_date=None, active_end_date=None,
     source_min_year=2002, source_max_year=None,
     draw_days="daily", canonical_time_key="evening",
     notes="STUB",
 )
+_OR_PICK4_10PM = DrawJobDef(
+    state="OR", game_type="pick4", draw_time="night",
+    draw_label="Oregon Pick 4 10PM", schedule_version="v1",
+    active_start_date=None, active_end_date=None,
+    source_min_year=2002, source_max_year=None,
+    draw_days="daily", canonical_time_key="night",
+    notes="STUB",
+)
 
-JOB_DEFINITIONS: list[DrawJobDef] = [
-    _OR_PICK4_MIDDAY,
-    _OR_PICK4_EVENING,
+JOB_DEFINITIONS = [
+    _OR_PICK4_1PM,
+    _OR_PICK4_4PM,
+    _OR_PICK4_7PM,
+    _OR_PICK4_10PM,
 ]
 
-SOURCE_MAPPINGS: list[SourceJobMapping] = [
+SOURCE_MAPPINGS = [
     SourceJobMapping(
-        job_def=_OR_PICK4_MIDDAY, source_name=SourceName.LOTTERY_NET,
+        job_def=_OR_PICK4_1PM, source_name=SourceName.LOTTERY_NET,
         source_priority=SOURCE_PRIORITIES[SourceName.LOTTERY_NET],
-        source_state_slug="oregon", source_game_slug="pick-4-midday",
-        source_draw_time_label="Midday",
+        source_state_slug="oregon", source_game_slug="pick-4-1pm",
+        source_draw_time_label="1PM",
         url_template="https://www.lottery.net/{state_slug}/{game_slug}/numbers/{year}",
         source_min_year=2002, slug_verified=False,
-        notes="ESTIMATED: verify /oregon/pick-4-midday/numbers/2024",
+        notes="ESTIMATED: verify /oregon/pick-4-1pm/numbers/2024",
     ),
     SourceJobMapping(
-        job_def=_OR_PICK4_MIDDAY, source_name=SourceName.LOTTERYCORNER,
-        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERYCORNER],
-        source_state_slug="oregon", source_game_slug="pick-4",
-        source_draw_time_label="Midday",
-        url_template="https://www.lotterycorner.com/{state_slug}/{game_slug}/{year}-{month:02d}.html",
-        source_min_year=2005, slug_verified=False,
-        notes="ESTIMATED",
-    ),
-    SourceJobMapping(
-        job_def=_OR_PICK4_MIDDAY, source_name=SourceName.LOTTERYUSA,
-        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERYUSA],
-        source_state_slug="oregon", source_game_slug="pick-4",
-        source_draw_time_label="Midday",
-        url_template="https://lotteryusa.com/{state_slug}/{game_slug}/",
-        source_min_year=2018, slug_verified=False,
-        notes="ESTIMATED. Recent only.",
-    ),
-    SourceJobMapping(
-        job_def=_OR_PICK4_EVENING, source_name=SourceName.LOTTERY_NET,
+        job_def=_OR_PICK4_4PM, source_name=SourceName.LOTTERY_NET,
         source_priority=SOURCE_PRIORITIES[SourceName.LOTTERY_NET],
-        source_state_slug="oregon", source_game_slug="pick-4-evening",
-        source_draw_time_label="Evening",
+        source_state_slug="oregon", source_game_slug="pick-4-4pm",
+        source_draw_time_label="4PM",
         url_template="https://www.lottery.net/{state_slug}/{game_slug}/numbers/{year}",
         source_min_year=2002, slug_verified=False,
-        notes="ESTIMATED: verify /oregon/pick-4-evening/numbers/2024",
+        notes="ESTIMATED: verify /oregon/pick-4-4pm/numbers/2024",
     ),
     SourceJobMapping(
-        job_def=_OR_PICK4_EVENING, source_name=SourceName.LOTTERYCORNER,
-        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERYCORNER],
-        source_state_slug="oregon", source_game_slug="pick-4",
-        source_draw_time_label="Evening",
-        url_template="https://www.lotterycorner.com/{state_slug}/{game_slug}/{year}-{month:02d}.html",
-        source_min_year=2005, slug_verified=False,
-        notes="ESTIMATED",
+        job_def=_OR_PICK4_7PM, source_name=SourceName.LOTTERY_NET,
+        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERY_NET],
+        source_state_slug="oregon", source_game_slug="pick-4-7pm",
+        source_draw_time_label="7PM",
+        url_template="https://www.lottery.net/{state_slug}/{game_slug}/numbers/{year}",
+        source_min_year=2002, slug_verified=False,
+        notes="ESTIMATED: verify /oregon/pick-4-7pm/numbers/2024",
     ),
     SourceJobMapping(
-        job_def=_OR_PICK4_EVENING, source_name=SourceName.LOTTERYUSA,
-        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERYUSA],
-        source_state_slug="oregon", source_game_slug="pick-4",
-        source_draw_time_label="Evening",
-        url_template="https://lotteryusa.com/{state_slug}/{game_slug}/",
-        source_min_year=2018, slug_verified=False,
-        notes="ESTIMATED. Recent only.",
+        job_def=_OR_PICK4_10PM, source_name=SourceName.LOTTERY_NET,
+        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERY_NET],
+        source_state_slug="oregon", source_game_slug="pick-4-10pm",
+        source_draw_time_label="10PM",
+        url_template="https://www.lottery.net/{state_slug}/{game_slug}/numbers/{year}",
+        source_min_year=2002, slug_verified=False,
+        notes="ESTIMATED: verify /oregon/pick-4-10pm/numbers/2024",
     ),
 ]
