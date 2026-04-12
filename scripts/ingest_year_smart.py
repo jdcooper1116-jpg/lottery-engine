@@ -12,8 +12,30 @@ from typing import List
 
 DEFAULT_GAMES = ["pick3", "pick4"]
 
+NO_LOTTERY_STATES: set[str] = {
+    "AL",
+    "AK",
+    "HI",
+    "UT",
+    "NV",
+}
+
+TRI_STATE_LOTTERY_STATES: set[str] = {
+    "ME",
+    "NH",
+    "VT",
+}
+
 UNSUPPORTED_STATE_GAMES: set[tuple[str, str]] = {
     ("OR", "pick3"),
+    ("WY", "pick3"),
+    ("WY", "pick4"),
+    ("SD", "pick3"),
+    ("SD", "pick4"),
+    ("MT", "pick3"),
+    ("MT", "pick4"),
+    ("ND", "pick3"),
+    ("ND", "pick4"),
 }
 
 
@@ -163,6 +185,42 @@ def main() -> int:
     for state in states:
         for game in args.games:
             print(f"=== {state} {game} {args.year} ===")
+
+            if state in NO_LOTTERY_STATES:
+                print("SKIP preset: no_state_lottery")
+                results.append(
+                    RunResult(
+                        state=state,
+                        game=game,
+                        year=args.year,
+                        status="skipped",
+                        reason="no_state_lottery",
+                        returncode=0,
+                        command="preset-skip",
+                        stdout_tail="",
+                        stderr_tail="",
+                    )
+                )
+                print()
+                continue
+
+            if state in TRI_STATE_LOTTERY_STATES:
+                print("SKIP preset: tri_state_lottery_handling_required")
+                results.append(
+                    RunResult(
+                        state=state,
+                        game=game,
+                        year=args.year,
+                        status="skipped",
+                        reason="tri_state_lottery_handling_required",
+                        returncode=0,
+                        command="preset-skip",
+                        stdout_tail="",
+                        stderr_tail="",
+                    )
+                )
+                print()
+                continue
 
             if (state, game) in UNSUPPORTED_STATE_GAMES:
                 print("SKIP preset: unsupported_state_game_combo")
