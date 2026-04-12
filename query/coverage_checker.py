@@ -54,13 +54,22 @@ def get_coverage_gaps(
 
     rows = conn.execute(
         f"""
-        SELECT draw_date, draw_time, coverage_status, last_attempted_at
-        FROM scrape_coverage
-        WHERE state=? AND game_type=?
-          AND draw_date BETWEEN ? AND ?
+        SELECT sc.draw_date, sc.draw_time, sc.coverage_status, sc.last_attempted_at
+        FROM scrape_coverage sc
+        WHERE sc.state=? AND sc.game_type=?
+          AND sc.draw_date BETWEEN ? AND ?
           {dt_filter}
-          AND coverage_status IN ('not_scraped','scrape_error')
-        ORDER BY draw_date, draw_time
+          AND sc.rowid = (
+              SELECT sc2.rowid
+              FROM scrape_coverage sc2
+              WHERE sc2.state = sc.state
+                AND sc2.game_type = sc.game_type
+                AND sc2.draw_date = sc.draw_date
+                AND sc2.draw_time = sc.draw_time
+              ORDER BY COALESCE(sc2.last_attempted_at, '') DESC, sc2.rowid DESC
+              LIMIT 1
+          )
+        ORDER BY sc.draw_date, sc.draw_time
         """,
         params,
     ).fetchall()
@@ -75,12 +84,13 @@ def get_coverage_gaps(
         slot_key = (slot_date.isoformat(), slot_time)
         if slot_key in coverage_map:
             row = coverage_map[slot_key]
-            gaps.append(CoverageGap(
-                draw_date=row["draw_date"],
-                draw_time=row["draw_time"],
-                coverage_status=row["coverage_status"],
-                last_attempted_at=row["last_attempted_at"],
-            ))
+            if row["coverage_status"] in ("not_scraped", "scrape_error"):
+                gaps.append(CoverageGap(
+                    draw_date=row["draw_date"],
+                    draw_time=row["draw_time"],
+                    coverage_status=row["coverage_status"],
+                    last_attempted_at=row["last_attempted_at"],
+                ))
         else:
             # Slot is scheduled but has NO coverage row at all = never attempted
             gaps.append(CoverageGap(
