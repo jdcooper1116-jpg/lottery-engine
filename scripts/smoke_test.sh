@@ -32,10 +32,12 @@ run_backtest () {
   python - <<'PY' "$payload"
 import json, sys, urllib.request
 
-payload = json.loads(sys.argv[1]).encode("utf-8")
+payload_str = sys.argv[1]
+payload_bytes = payload_str.encode("utf-8")
+
 req = urllib.request.Request(
     "http://127.0.0.1:8000/backtest",
-    data=payload,
+    data=payload_bytes,
     headers={"Content-Type": "application/json"},
     method="POST",
 )
@@ -43,18 +45,19 @@ req = urllib.request.Request(
 with urllib.request.urlopen(req) as resp:
     data = json.loads(resp.read().decode("utf-8"))
 
-state = data.get("summary", "").split("[", 1)[0].strip() if data.get("summary") else "?"
+summary = data.get("summary")
 hit_count = data.get("hit_count", 0)
 draws = len(data.get("all_draws", []))
 gaps = len(data.get("coverage_gaps", []))
-hit_dates = data.get("hit_dates", [])
-print({
-    "summary": data.get("summary"),
+hit_dates = data.get("hit_dates", [])[:5]
+
+print(json.dumps({
+    "summary": summary,
     "hit_count": hit_count,
     "draws_returned": draws,
     "coverage_gaps": gaps,
-    "hit_dates": hit_dates[:5],
-})
+    "hit_dates": hit_dates
+}, indent=2))
 PY
 }
 
