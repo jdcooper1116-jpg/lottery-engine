@@ -1,0 +1,790 @@
+state,game,year,status,reason,returncode,command,stdout_tail,stderr_tail
+GA,pick3,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state GA --game pick3 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=GA game=pick3 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            3
+  Raw results fetched:  1098
+  Observations written: 1098
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        1098
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:01 INFO     sources.lottery_net:   lottery.net: 30 rows  GA/pick3/night  2024/04  [cash-3-night]
+2026-04-12 16:25:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick3 | 2024/05
+2026-04-12 16:25:01 INFO     sources.lottery_net:   lottery.net: 31 rows  GA/pick3/night  2024/05  [cash-3-night]
+2026-04-12 16:25:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick3 | 2024/06
+2026-04-12 16:25:01 INFO     sources.lottery_net:   lottery.net: 30 rows  GA/pick3/night  2024/06  [cash-3-night]
+2026-04-12 16:25:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick3 | 2024/07
+2026-04-12 16:25:01 INFO     sources.lottery_net:   lottery.net: 31 rows  GA/pick3/night  2024/07  [cash-3-night]
+2026-04-12 16:25:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick3 | 2024/08
+2026-04-12 16:25:01 INFO     sources.lottery_net:   lottery.net: 31 rows  GA/pick3/night  2024/08  [cash-3-night]
+2026-04-12 16:25:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick3 | 2024/09
+2026-04-12 16:25:01 INFO     sources.lottery_net:   lottery.net: 30 rows  GA/pick3/night  2024/09  [cash-3-night]
+2026-04-12 16:25:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick3 | 2024/10
+2026-04-12 16:25:01 INFO     sources.lottery_net:   lottery.net: 31 rows  GA/pick3/night  2024/10  [cash-3-night]
+2026-04-12 16:25:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick3 | 2024/11
+2026-04-12 16:25:01 INFO     sources.lottery_net:   lottery.net: 30 rows  GA/pick3/night  2024/11  [cash-3-night]
+2026-04-12 16:25:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick3 | 2024/12
+2026-04-12 16:25:01 INFO     sources.lottery_net:   lottery.net: 31 rows  GA/pick3/night  2024/12  [cash-3-night]
+2026-04-12 16:25:01 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:01 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 1098, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:01 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 3, 'raw_results': 1098, 'observations_written': 1098, 'reconcile_stats': {'accepted': 0, 'duplicate': 1098, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+GA,pick4,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state GA --game pick4 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=GA game=pick4 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            3
+  Raw results fetched:  1098
+  Observations written: 1098
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        1098
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:05 INFO     sources.lottery_net:   lottery.net: 30 rows  GA/pick4/night  2024/04  [cash-4-night]
+2026-04-12 16:25:05 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick4 | 2024/05
+2026-04-12 16:25:05 INFO     sources.lottery_net:   lottery.net: 31 rows  GA/pick4/night  2024/05  [cash-4-night]
+2026-04-12 16:25:05 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick4 | 2024/06
+2026-04-12 16:25:05 INFO     sources.lottery_net:   lottery.net: 30 rows  GA/pick4/night  2024/06  [cash-4-night]
+2026-04-12 16:25:05 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick4 | 2024/07
+2026-04-12 16:25:05 INFO     sources.lottery_net:   lottery.net: 31 rows  GA/pick4/night  2024/07  [cash-4-night]
+2026-04-12 16:25:05 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick4 | 2024/08
+2026-04-12 16:25:05 INFO     sources.lottery_net:   lottery.net: 31 rows  GA/pick4/night  2024/08  [cash-4-night]
+2026-04-12 16:25:05 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick4 | 2024/09
+2026-04-12 16:25:05 INFO     sources.lottery_net:   lottery.net: 30 rows  GA/pick4/night  2024/09  [cash-4-night]
+2026-04-12 16:25:05 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick4 | 2024/10
+2026-04-12 16:25:05 INFO     sources.lottery_net:   lottery.net: 31 rows  GA/pick4/night  2024/10  [cash-4-night]
+2026-04-12 16:25:05 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick4 | 2024/11
+2026-04-12 16:25:05 INFO     sources.lottery_net:   lottery.net: 30 rows  GA/pick4/night  2024/11  [cash-4-night]
+2026-04-12 16:25:05 INFO     sources.base: Fetching SourceName.LOTTERY_NET | GA | pick4 | 2024/12
+2026-04-12 16:25:05 INFO     sources.lottery_net:   lottery.net: 31 rows  GA/pick4/night  2024/12  [cash-4-night]
+2026-04-12 16:25:05 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:05 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 1098, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:05 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 3, 'raw_results': 1098, 'observations_written': 1098, 'reconcile_stats': {'accepted': 0, 'duplicate': 1098, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+TX,pick3,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state TX --game pick3 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=TX game=pick3 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            4
+  Raw results fetched:  1256
+  Observations written: 1256
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        1256
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:11 INFO     sources.lottery_net:   lottery.net: 26 rows  TX/pick3/night  2024/04  [pick-3-night]
+2026-04-12 16:25:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick3 | 2024/05
+2026-04-12 16:25:11 INFO     sources.lottery_net:   lottery.net: 27 rows  TX/pick3/night  2024/05  [pick-3-night]
+2026-04-12 16:25:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick3 | 2024/06
+2026-04-12 16:25:11 INFO     sources.lottery_net:   lottery.net: 25 rows  TX/pick3/night  2024/06  [pick-3-night]
+2026-04-12 16:25:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick3 | 2024/07
+2026-04-12 16:25:11 INFO     sources.lottery_net:   lottery.net: 27 rows  TX/pick3/night  2024/07  [pick-3-night]
+2026-04-12 16:25:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick3 | 2024/08
+2026-04-12 16:25:11 INFO     sources.lottery_net:   lottery.net: 27 rows  TX/pick3/night  2024/08  [pick-3-night]
+2026-04-12 16:25:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick3 | 2024/09
+2026-04-12 16:25:11 INFO     sources.lottery_net:   lottery.net: 25 rows  TX/pick3/night  2024/09  [pick-3-night]
+2026-04-12 16:25:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick3 | 2024/10
+2026-04-12 16:25:11 INFO     sources.lottery_net:   lottery.net: 27 rows  TX/pick3/night  2024/10  [pick-3-night]
+2026-04-12 16:25:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick3 | 2024/11
+2026-04-12 16:25:11 INFO     sources.lottery_net:   lottery.net: 26 rows  TX/pick3/night  2024/11  [pick-3-night]
+2026-04-12 16:25:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick3 | 2024/12
+2026-04-12 16:25:11 INFO     sources.lottery_net:   lottery.net: 26 rows  TX/pick3/night  2024/12  [pick-3-night]
+2026-04-12 16:25:11 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:11 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 1256, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:11 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 4, 'raw_results': 1256, 'observations_written': 1256, 'reconcile_stats': {'accepted': 0, 'duplicate': 1256, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+TX,pick4,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state TX --game pick4 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=TX game=pick4 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            4
+  Raw results fetched:  1256
+  Observations written: 1256
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        1256
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:16 INFO     sources.lottery_net:   lottery.net: 26 rows  TX/pick4/night  2024/04  [daily-4-night]
+2026-04-12 16:25:16 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick4 | 2024/05
+2026-04-12 16:25:16 INFO     sources.lottery_net:   lottery.net: 27 rows  TX/pick4/night  2024/05  [daily-4-night]
+2026-04-12 16:25:16 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick4 | 2024/06
+2026-04-12 16:25:16 INFO     sources.lottery_net:   lottery.net: 25 rows  TX/pick4/night  2024/06  [daily-4-night]
+2026-04-12 16:25:16 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick4 | 2024/07
+2026-04-12 16:25:16 INFO     sources.lottery_net:   lottery.net: 27 rows  TX/pick4/night  2024/07  [daily-4-night]
+2026-04-12 16:25:16 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick4 | 2024/08
+2026-04-12 16:25:16 INFO     sources.lottery_net:   lottery.net: 27 rows  TX/pick4/night  2024/08  [daily-4-night]
+2026-04-12 16:25:16 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick4 | 2024/09
+2026-04-12 16:25:16 INFO     sources.lottery_net:   lottery.net: 25 rows  TX/pick4/night  2024/09  [daily-4-night]
+2026-04-12 16:25:16 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick4 | 2024/10
+2026-04-12 16:25:16 INFO     sources.lottery_net:   lottery.net: 27 rows  TX/pick4/night  2024/10  [daily-4-night]
+2026-04-12 16:25:16 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick4 | 2024/11
+2026-04-12 16:25:16 INFO     sources.lottery_net:   lottery.net: 26 rows  TX/pick4/night  2024/11  [daily-4-night]
+2026-04-12 16:25:16 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TX | pick4 | 2024/12
+2026-04-12 16:25:16 INFO     sources.lottery_net:   lottery.net: 26 rows  TX/pick4/night  2024/12  [daily-4-night]
+2026-04-12 16:25:16 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:16 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 1256, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:16 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 4, 'raw_results': 1256, 'observations_written': 1256, 'reconcile_stats': {'accepted': 0, 'duplicate': 1256, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+OR,pick3,2024,skipped,unsupported_state_game_combo,0,preset-skip,,
+OR,pick4,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state OR --game pick4 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=OR game=pick4 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            4
+  Raw results fetched:  1464
+  Observations written: 1464
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        1464
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:22 INFO     sources.lottery_net:   lottery.net: 30 rows  OR/pick4/night  2024/04  [pick-4-10pm]
+2026-04-12 16:25:22 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OR | pick4 | 2024/05
+2026-04-12 16:25:22 INFO     sources.lottery_net:   lottery.net: 31 rows  OR/pick4/night  2024/05  [pick-4-10pm]
+2026-04-12 16:25:22 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OR | pick4 | 2024/06
+2026-04-12 16:25:22 INFO     sources.lottery_net:   lottery.net: 30 rows  OR/pick4/night  2024/06  [pick-4-10pm]
+2026-04-12 16:25:22 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OR | pick4 | 2024/07
+2026-04-12 16:25:22 INFO     sources.lottery_net:   lottery.net: 31 rows  OR/pick4/night  2024/07  [pick-4-10pm]
+2026-04-12 16:25:22 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OR | pick4 | 2024/08
+2026-04-12 16:25:22 INFO     sources.lottery_net:   lottery.net: 31 rows  OR/pick4/night  2024/08  [pick-4-10pm]
+2026-04-12 16:25:22 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OR | pick4 | 2024/09
+2026-04-12 16:25:22 INFO     sources.lottery_net:   lottery.net: 30 rows  OR/pick4/night  2024/09  [pick-4-10pm]
+2026-04-12 16:25:22 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OR | pick4 | 2024/10
+2026-04-12 16:25:22 INFO     sources.lottery_net:   lottery.net: 31 rows  OR/pick4/night  2024/10  [pick-4-10pm]
+2026-04-12 16:25:22 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OR | pick4 | 2024/11
+2026-04-12 16:25:22 INFO     sources.lottery_net:   lottery.net: 30 rows  OR/pick4/night  2024/11  [pick-4-10pm]
+2026-04-12 16:25:22 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OR | pick4 | 2024/12
+2026-04-12 16:25:22 INFO     sources.lottery_net:   lottery.net: 31 rows  OR/pick4/night  2024/12  [pick-4-10pm]
+2026-04-12 16:25:22 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:22 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 1464, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:22 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 4, 'raw_results': 1464, 'observations_written': 1464, 'reconcile_stats': {'accepted': 0, 'duplicate': 1464, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+DC,pick3,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state DC --game pick3 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=DC game=pick3 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            3
+  Raw results fetched:  1098
+  Observations written: 1098
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        1098
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:26 INFO     sources.lottery_net:   lottery.net: 30 rows  DC/pick3/night  2024/04  [dc-3-night]
+2026-04-12 16:25:26 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick3 | 2024/05
+2026-04-12 16:25:26 INFO     sources.lottery_net:   lottery.net: 31 rows  DC/pick3/night  2024/05  [dc-3-night]
+2026-04-12 16:25:26 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick3 | 2024/06
+2026-04-12 16:25:26 INFO     sources.lottery_net:   lottery.net: 30 rows  DC/pick3/night  2024/06  [dc-3-night]
+2026-04-12 16:25:26 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick3 | 2024/07
+2026-04-12 16:25:26 INFO     sources.lottery_net:   lottery.net: 31 rows  DC/pick3/night  2024/07  [dc-3-night]
+2026-04-12 16:25:26 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick3 | 2024/08
+2026-04-12 16:25:26 INFO     sources.lottery_net:   lottery.net: 31 rows  DC/pick3/night  2024/08  [dc-3-night]
+2026-04-12 16:25:26 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick3 | 2024/09
+2026-04-12 16:25:26 INFO     sources.lottery_net:   lottery.net: 30 rows  DC/pick3/night  2024/09  [dc-3-night]
+2026-04-12 16:25:26 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick3 | 2024/10
+2026-04-12 16:25:26 INFO     sources.lottery_net:   lottery.net: 31 rows  DC/pick3/night  2024/10  [dc-3-night]
+2026-04-12 16:25:26 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick3 | 2024/11
+2026-04-12 16:25:26 INFO     sources.lottery_net:   lottery.net: 30 rows  DC/pick3/night  2024/11  [dc-3-night]
+2026-04-12 16:25:26 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick3 | 2024/12
+2026-04-12 16:25:26 INFO     sources.lottery_net:   lottery.net: 31 rows  DC/pick3/night  2024/12  [dc-3-night]
+2026-04-12 16:25:26 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:26 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 1098, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:26 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 3, 'raw_results': 1098, 'observations_written': 1098, 'reconcile_stats': {'accepted': 0, 'duplicate': 1098, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+DC,pick4,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state DC --game pick4 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=DC game=pick4 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            3
+  Raw results fetched:  1098
+  Observations written: 1098
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        1098
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:30 INFO     sources.lottery_net:   lottery.net: 30 rows  DC/pick4/night  2024/04  [dc-4-night]
+2026-04-12 16:25:30 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick4 | 2024/05
+2026-04-12 16:25:30 INFO     sources.lottery_net:   lottery.net: 31 rows  DC/pick4/night  2024/05  [dc-4-night]
+2026-04-12 16:25:30 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick4 | 2024/06
+2026-04-12 16:25:30 INFO     sources.lottery_net:   lottery.net: 30 rows  DC/pick4/night  2024/06  [dc-4-night]
+2026-04-12 16:25:30 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick4 | 2024/07
+2026-04-12 16:25:30 INFO     sources.lottery_net:   lottery.net: 31 rows  DC/pick4/night  2024/07  [dc-4-night]
+2026-04-12 16:25:30 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick4 | 2024/08
+2026-04-12 16:25:30 INFO     sources.lottery_net:   lottery.net: 31 rows  DC/pick4/night  2024/08  [dc-4-night]
+2026-04-12 16:25:30 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick4 | 2024/09
+2026-04-12 16:25:30 INFO     sources.lottery_net:   lottery.net: 30 rows  DC/pick4/night  2024/09  [dc-4-night]
+2026-04-12 16:25:30 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick4 | 2024/10
+2026-04-12 16:25:30 INFO     sources.lottery_net:   lottery.net: 31 rows  DC/pick4/night  2024/10  [dc-4-night]
+2026-04-12 16:25:30 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick4 | 2024/11
+2026-04-12 16:25:30 INFO     sources.lottery_net:   lottery.net: 30 rows  DC/pick4/night  2024/11  [dc-4-night]
+2026-04-12 16:25:30 INFO     sources.base: Fetching SourceName.LOTTERY_NET | DC | pick4 | 2024/12
+2026-04-12 16:25:30 INFO     sources.lottery_net:   lottery.net: 31 rows  DC/pick4/night  2024/12  [dc-4-night]
+2026-04-12 16:25:30 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:30 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 1098, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:30 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 3, 'raw_results': 1098, 'observations_written': 1098, 'reconcile_stats': {'accepted': 0, 'duplicate': 1098, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+FL,pick3,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state FL --game pick3 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=FL game=pick3 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  732
+  Observations written: 732
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        732
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:33 INFO     sources.lottery_net:   lottery.net: 30 rows  FL/pick3/midday  2024/04  [pick-3-midday]
+2026-04-12 16:25:33 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick3 | 2024/05
+2026-04-12 16:25:33 INFO     sources.lottery_net:   lottery.net: 31 rows  FL/pick3/midday  2024/05  [pick-3-midday]
+2026-04-12 16:25:33 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick3 | 2024/06
+2026-04-12 16:25:33 INFO     sources.lottery_net:   lottery.net: 30 rows  FL/pick3/midday  2024/06  [pick-3-midday]
+2026-04-12 16:25:33 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick3 | 2024/07
+2026-04-12 16:25:33 INFO     sources.lottery_net:   lottery.net: 31 rows  FL/pick3/midday  2024/07  [pick-3-midday]
+2026-04-12 16:25:33 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick3 | 2024/08
+2026-04-12 16:25:33 INFO     sources.lottery_net:   lottery.net: 31 rows  FL/pick3/midday  2024/08  [pick-3-midday]
+2026-04-12 16:25:33 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick3 | 2024/09
+2026-04-12 16:25:33 INFO     sources.lottery_net:   lottery.net: 30 rows  FL/pick3/midday  2024/09  [pick-3-midday]
+2026-04-12 16:25:33 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick3 | 2024/10
+2026-04-12 16:25:33 INFO     sources.lottery_net:   lottery.net: 31 rows  FL/pick3/midday  2024/10  [pick-3-midday]
+2026-04-12 16:25:33 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick3 | 2024/11
+2026-04-12 16:25:33 INFO     sources.lottery_net:   lottery.net: 30 rows  FL/pick3/midday  2024/11  [pick-3-midday]
+2026-04-12 16:25:33 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick3 | 2024/12
+2026-04-12 16:25:33 INFO     sources.lottery_net:   lottery.net: 31 rows  FL/pick3/midday  2024/12  [pick-3-midday]
+2026-04-12 16:25:33 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:33 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:33 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 732, 'observations_written': 732, 'reconcile_stats': {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+FL,pick4,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state FL --game pick4 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=FL game=pick4 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  732
+  Observations written: 732
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        732
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:35 INFO     sources.lottery_net:   lottery.net: 30 rows  FL/pick4/midday  2024/04  [pick-4-midday]
+2026-04-12 16:25:35 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick4 | 2024/05
+2026-04-12 16:25:35 INFO     sources.lottery_net:   lottery.net: 31 rows  FL/pick4/midday  2024/05  [pick-4-midday]
+2026-04-12 16:25:35 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick4 | 2024/06
+2026-04-12 16:25:35 INFO     sources.lottery_net:   lottery.net: 30 rows  FL/pick4/midday  2024/06  [pick-4-midday]
+2026-04-12 16:25:35 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick4 | 2024/07
+2026-04-12 16:25:35 INFO     sources.lottery_net:   lottery.net: 31 rows  FL/pick4/midday  2024/07  [pick-4-midday]
+2026-04-12 16:25:35 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick4 | 2024/08
+2026-04-12 16:25:35 INFO     sources.lottery_net:   lottery.net: 31 rows  FL/pick4/midday  2024/08  [pick-4-midday]
+2026-04-12 16:25:35 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick4 | 2024/09
+2026-04-12 16:25:35 INFO     sources.lottery_net:   lottery.net: 30 rows  FL/pick4/midday  2024/09  [pick-4-midday]
+2026-04-12 16:25:35 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick4 | 2024/10
+2026-04-12 16:25:35 INFO     sources.lottery_net:   lottery.net: 31 rows  FL/pick4/midday  2024/10  [pick-4-midday]
+2026-04-12 16:25:35 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick4 | 2024/11
+2026-04-12 16:25:35 INFO     sources.lottery_net:   lottery.net: 30 rows  FL/pick4/midday  2024/11  [pick-4-midday]
+2026-04-12 16:25:35 INFO     sources.base: Fetching SourceName.LOTTERY_NET | FL | pick4 | 2024/12
+2026-04-12 16:25:35 INFO     sources.lottery_net:   lottery.net: 31 rows  FL/pick4/midday  2024/12  [pick-4-midday]
+2026-04-12 16:25:35 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:35 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:35 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 732, 'observations_written': 732, 'reconcile_stats': {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+NY,pick3,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state NY --game pick3 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=NY game=pick3 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  732
+  Observations written: 732
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        732
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:38 INFO     sources.lottery_net:   lottery.net: 30 rows  NY/pick3/midday  2024/04  [numbers-midday]
+2026-04-12 16:25:38 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick3 | 2024/05
+2026-04-12 16:25:38 INFO     sources.lottery_net:   lottery.net: 31 rows  NY/pick3/midday  2024/05  [numbers-midday]
+2026-04-12 16:25:38 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick3 | 2024/06
+2026-04-12 16:25:38 INFO     sources.lottery_net:   lottery.net: 30 rows  NY/pick3/midday  2024/06  [numbers-midday]
+2026-04-12 16:25:38 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick3 | 2024/07
+2026-04-12 16:25:38 INFO     sources.lottery_net:   lottery.net: 31 rows  NY/pick3/midday  2024/07  [numbers-midday]
+2026-04-12 16:25:38 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick3 | 2024/08
+2026-04-12 16:25:38 INFO     sources.lottery_net:   lottery.net: 31 rows  NY/pick3/midday  2024/08  [numbers-midday]
+2026-04-12 16:25:38 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick3 | 2024/09
+2026-04-12 16:25:38 INFO     sources.lottery_net:   lottery.net: 30 rows  NY/pick3/midday  2024/09  [numbers-midday]
+2026-04-12 16:25:38 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick3 | 2024/10
+2026-04-12 16:25:38 INFO     sources.lottery_net:   lottery.net: 31 rows  NY/pick3/midday  2024/10  [numbers-midday]
+2026-04-12 16:25:38 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick3 | 2024/11
+2026-04-12 16:25:38 INFO     sources.lottery_net:   lottery.net: 30 rows  NY/pick3/midday  2024/11  [numbers-midday]
+2026-04-12 16:25:38 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick3 | 2024/12
+2026-04-12 16:25:38 INFO     sources.lottery_net:   lottery.net: 31 rows  NY/pick3/midday  2024/12  [numbers-midday]
+2026-04-12 16:25:38 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:38 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:38 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 732, 'observations_written': 732, 'reconcile_stats': {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+NY,pick4,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state NY --game pick4 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=NY game=pick4 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  732
+  Observations written: 732
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        732
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:40 INFO     sources.lottery_net:   lottery.net: 30 rows  NY/pick4/midday  2024/04  [win-4-midday]
+2026-04-12 16:25:40 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick4 | 2024/05
+2026-04-12 16:25:40 INFO     sources.lottery_net:   lottery.net: 31 rows  NY/pick4/midday  2024/05  [win-4-midday]
+2026-04-12 16:25:40 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick4 | 2024/06
+2026-04-12 16:25:40 INFO     sources.lottery_net:   lottery.net: 30 rows  NY/pick4/midday  2024/06  [win-4-midday]
+2026-04-12 16:25:40 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick4 | 2024/07
+2026-04-12 16:25:40 INFO     sources.lottery_net:   lottery.net: 31 rows  NY/pick4/midday  2024/07  [win-4-midday]
+2026-04-12 16:25:40 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick4 | 2024/08
+2026-04-12 16:25:40 INFO     sources.lottery_net:   lottery.net: 31 rows  NY/pick4/midday  2024/08  [win-4-midday]
+2026-04-12 16:25:40 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick4 | 2024/09
+2026-04-12 16:25:40 INFO     sources.lottery_net:   lottery.net: 30 rows  NY/pick4/midday  2024/09  [win-4-midday]
+2026-04-12 16:25:40 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick4 | 2024/10
+2026-04-12 16:25:40 INFO     sources.lottery_net:   lottery.net: 31 rows  NY/pick4/midday  2024/10  [win-4-midday]
+2026-04-12 16:25:40 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick4 | 2024/11
+2026-04-12 16:25:40 INFO     sources.lottery_net:   lottery.net: 30 rows  NY/pick4/midday  2024/11  [win-4-midday]
+2026-04-12 16:25:40 INFO     sources.base: Fetching SourceName.LOTTERY_NET | NY | pick4 | 2024/12
+2026-04-12 16:25:40 INFO     sources.lottery_net:   lottery.net: 31 rows  NY/pick4/midday  2024/12  [win-4-midday]
+2026-04-12 16:25:40 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:40 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:40 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 732, 'observations_written': 732, 'reconcile_stats': {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+OH,pick3,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state OH --game pick3 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=OH game=pick3 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  732
+  Observations written: 732
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        732
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:43 INFO     sources.lottery_net:   lottery.net: 30 rows  OH/pick3/midday  2024/04  [pick-3-midday]
+2026-04-12 16:25:43 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick3 | 2024/05
+2026-04-12 16:25:43 INFO     sources.lottery_net:   lottery.net: 31 rows  OH/pick3/midday  2024/05  [pick-3-midday]
+2026-04-12 16:25:43 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick3 | 2024/06
+2026-04-12 16:25:43 INFO     sources.lottery_net:   lottery.net: 30 rows  OH/pick3/midday  2024/06  [pick-3-midday]
+2026-04-12 16:25:43 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick3 | 2024/07
+2026-04-12 16:25:43 INFO     sources.lottery_net:   lottery.net: 31 rows  OH/pick3/midday  2024/07  [pick-3-midday]
+2026-04-12 16:25:43 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick3 | 2024/08
+2026-04-12 16:25:43 INFO     sources.lottery_net:   lottery.net: 31 rows  OH/pick3/midday  2024/08  [pick-3-midday]
+2026-04-12 16:25:43 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick3 | 2024/09
+2026-04-12 16:25:43 INFO     sources.lottery_net:   lottery.net: 30 rows  OH/pick3/midday  2024/09  [pick-3-midday]
+2026-04-12 16:25:43 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick3 | 2024/10
+2026-04-12 16:25:43 INFO     sources.lottery_net:   lottery.net: 31 rows  OH/pick3/midday  2024/10  [pick-3-midday]
+2026-04-12 16:25:43 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick3 | 2024/11
+2026-04-12 16:25:43 INFO     sources.lottery_net:   lottery.net: 30 rows  OH/pick3/midday  2024/11  [pick-3-midday]
+2026-04-12 16:25:43 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick3 | 2024/12
+2026-04-12 16:25:43 INFO     sources.lottery_net:   lottery.net: 31 rows  OH/pick3/midday  2024/12  [pick-3-midday]
+2026-04-12 16:25:43 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:43 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:43 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 732, 'observations_written': 732, 'reconcile_stats': {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+OH,pick4,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state OH --game pick4 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=OH game=pick4 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  732
+  Observations written: 732
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        732
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:45 INFO     sources.lottery_net:   lottery.net: 30 rows  OH/pick4/midday  2024/04  [pick-4-midday]
+2026-04-12 16:25:45 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick4 | 2024/05
+2026-04-12 16:25:45 INFO     sources.lottery_net:   lottery.net: 31 rows  OH/pick4/midday  2024/05  [pick-4-midday]
+2026-04-12 16:25:45 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick4 | 2024/06
+2026-04-12 16:25:45 INFO     sources.lottery_net:   lottery.net: 30 rows  OH/pick4/midday  2024/06  [pick-4-midday]
+2026-04-12 16:25:45 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick4 | 2024/07
+2026-04-12 16:25:45 INFO     sources.lottery_net:   lottery.net: 31 rows  OH/pick4/midday  2024/07  [pick-4-midday]
+2026-04-12 16:25:45 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick4 | 2024/08
+2026-04-12 16:25:45 INFO     sources.lottery_net:   lottery.net: 31 rows  OH/pick4/midday  2024/08  [pick-4-midday]
+2026-04-12 16:25:45 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick4 | 2024/09
+2026-04-12 16:25:45 INFO     sources.lottery_net:   lottery.net: 30 rows  OH/pick4/midday  2024/09  [pick-4-midday]
+2026-04-12 16:25:45 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick4 | 2024/10
+2026-04-12 16:25:45 INFO     sources.lottery_net:   lottery.net: 31 rows  OH/pick4/midday  2024/10  [pick-4-midday]
+2026-04-12 16:25:45 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick4 | 2024/11
+2026-04-12 16:25:45 INFO     sources.lottery_net:   lottery.net: 30 rows  OH/pick4/midday  2024/11  [pick-4-midday]
+2026-04-12 16:25:45 INFO     sources.base: Fetching SourceName.LOTTERY_NET | OH | pick4 | 2024/12
+2026-04-12 16:25:45 INFO     sources.lottery_net:   lottery.net: 31 rows  OH/pick4/midday  2024/12  [pick-4-midday]
+2026-04-12 16:25:45 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:45 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:45 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 732, 'observations_written': 732, 'reconcile_stats': {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+MI,pick3,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state MI --game pick3 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=MI game=pick3 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  732
+  Observations written: 732
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        732
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:48 INFO     sources.lottery_net:   lottery.net: 30 rows  MI/pick3/midday  2024/04  [daily-3-midday]
+2026-04-12 16:25:48 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick3 | 2024/05
+2026-04-12 16:25:48 INFO     sources.lottery_net:   lottery.net: 31 rows  MI/pick3/midday  2024/05  [daily-3-midday]
+2026-04-12 16:25:48 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick3 | 2024/06
+2026-04-12 16:25:48 INFO     sources.lottery_net:   lottery.net: 30 rows  MI/pick3/midday  2024/06  [daily-3-midday]
+2026-04-12 16:25:48 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick3 | 2024/07
+2026-04-12 16:25:48 INFO     sources.lottery_net:   lottery.net: 31 rows  MI/pick3/midday  2024/07  [daily-3-midday]
+2026-04-12 16:25:48 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick3 | 2024/08
+2026-04-12 16:25:48 INFO     sources.lottery_net:   lottery.net: 31 rows  MI/pick3/midday  2024/08  [daily-3-midday]
+2026-04-12 16:25:48 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick3 | 2024/09
+2026-04-12 16:25:48 INFO     sources.lottery_net:   lottery.net: 30 rows  MI/pick3/midday  2024/09  [daily-3-midday]
+2026-04-12 16:25:48 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick3 | 2024/10
+2026-04-12 16:25:48 INFO     sources.lottery_net:   lottery.net: 31 rows  MI/pick3/midday  2024/10  [daily-3-midday]
+2026-04-12 16:25:48 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick3 | 2024/11
+2026-04-12 16:25:48 INFO     sources.lottery_net:   lottery.net: 30 rows  MI/pick3/midday  2024/11  [daily-3-midday]
+2026-04-12 16:25:48 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick3 | 2024/12
+2026-04-12 16:25:48 INFO     sources.lottery_net:   lottery.net: 31 rows  MI/pick3/midday  2024/12  [daily-3-midday]
+2026-04-12 16:25:48 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:48 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:48 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 732, 'observations_written': 732, 'reconcile_stats': {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+MI,pick4,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state MI --game pick4 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=MI game=pick4 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  732
+  Observations written: 732
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        732
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:50 INFO     sources.lottery_net:   lottery.net: 30 rows  MI/pick4/midday  2024/04  [daily-4-midday]
+2026-04-12 16:25:50 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick4 | 2024/05
+2026-04-12 16:25:50 INFO     sources.lottery_net:   lottery.net: 31 rows  MI/pick4/midday  2024/05  [daily-4-midday]
+2026-04-12 16:25:50 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick4 | 2024/06
+2026-04-12 16:25:50 INFO     sources.lottery_net:   lottery.net: 30 rows  MI/pick4/midday  2024/06  [daily-4-midday]
+2026-04-12 16:25:50 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick4 | 2024/07
+2026-04-12 16:25:50 INFO     sources.lottery_net:   lottery.net: 31 rows  MI/pick4/midday  2024/07  [daily-4-midday]
+2026-04-12 16:25:50 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick4 | 2024/08
+2026-04-12 16:25:50 INFO     sources.lottery_net:   lottery.net: 31 rows  MI/pick4/midday  2024/08  [daily-4-midday]
+2026-04-12 16:25:50 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick4 | 2024/09
+2026-04-12 16:25:50 INFO     sources.lottery_net:   lottery.net: 30 rows  MI/pick4/midday  2024/09  [daily-4-midday]
+2026-04-12 16:25:50 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick4 | 2024/10
+2026-04-12 16:25:50 INFO     sources.lottery_net:   lottery.net: 31 rows  MI/pick4/midday  2024/10  [daily-4-midday]
+2026-04-12 16:25:50 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick4 | 2024/11
+2026-04-12 16:25:50 INFO     sources.lottery_net:   lottery.net: 30 rows  MI/pick4/midday  2024/11  [daily-4-midday]
+2026-04-12 16:25:50 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MI | pick4 | 2024/12
+2026-04-12 16:25:50 INFO     sources.lottery_net:   lottery.net: 31 rows  MI/pick4/midday  2024/12  [daily-4-midday]
+2026-04-12 16:25:50 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:50 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:51 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 732, 'observations_written': 732, 'reconcile_stats': {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+IL,pick3,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state IL --game pick3 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=IL game=pick3 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  732
+  Observations written: 732
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        732
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:53 INFO     sources.lottery_net:   lottery.net: 30 rows  IL/pick3/midday  2024/04  [pick-3-midday]
+2026-04-12 16:25:53 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick3 | 2024/05
+2026-04-12 16:25:53 INFO     sources.lottery_net:   lottery.net: 31 rows  IL/pick3/midday  2024/05  [pick-3-midday]
+2026-04-12 16:25:53 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick3 | 2024/06
+2026-04-12 16:25:53 INFO     sources.lottery_net:   lottery.net: 30 rows  IL/pick3/midday  2024/06  [pick-3-midday]
+2026-04-12 16:25:53 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick3 | 2024/07
+2026-04-12 16:25:53 INFO     sources.lottery_net:   lottery.net: 31 rows  IL/pick3/midday  2024/07  [pick-3-midday]
+2026-04-12 16:25:53 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick3 | 2024/08
+2026-04-12 16:25:53 INFO     sources.lottery_net:   lottery.net: 31 rows  IL/pick3/midday  2024/08  [pick-3-midday]
+2026-04-12 16:25:53 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick3 | 2024/09
+2026-04-12 16:25:53 INFO     sources.lottery_net:   lottery.net: 30 rows  IL/pick3/midday  2024/09  [pick-3-midday]
+2026-04-12 16:25:53 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick3 | 2024/10
+2026-04-12 16:25:53 INFO     sources.lottery_net:   lottery.net: 31 rows  IL/pick3/midday  2024/10  [pick-3-midday]
+2026-04-12 16:25:53 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick3 | 2024/11
+2026-04-12 16:25:53 INFO     sources.lottery_net:   lottery.net: 30 rows  IL/pick3/midday  2024/11  [pick-3-midday]
+2026-04-12 16:25:53 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick3 | 2024/12
+2026-04-12 16:25:53 INFO     sources.lottery_net:   lottery.net: 31 rows  IL/pick3/midday  2024/12  [pick-3-midday]
+2026-04-12 16:25:53 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:53 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:53 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 732, 'observations_written': 732, 'reconcile_stats': {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+IL,pick4,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state IL --game pick4 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=IL game=pick4 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  732
+  Observations written: 732
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        732
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:56 INFO     sources.lottery_net:   lottery.net: 30 rows  IL/pick4/midday  2024/04  [pick-4-midday]
+2026-04-12 16:25:56 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick4 | 2024/05
+2026-04-12 16:25:56 INFO     sources.lottery_net:   lottery.net: 31 rows  IL/pick4/midday  2024/05  [pick-4-midday]
+2026-04-12 16:25:56 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick4 | 2024/06
+2026-04-12 16:25:56 INFO     sources.lottery_net:   lottery.net: 30 rows  IL/pick4/midday  2024/06  [pick-4-midday]
+2026-04-12 16:25:56 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick4 | 2024/07
+2026-04-12 16:25:56 INFO     sources.lottery_net:   lottery.net: 31 rows  IL/pick4/midday  2024/07  [pick-4-midday]
+2026-04-12 16:25:56 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick4 | 2024/08
+2026-04-12 16:25:56 INFO     sources.lottery_net:   lottery.net: 31 rows  IL/pick4/midday  2024/08  [pick-4-midday]
+2026-04-12 16:25:56 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick4 | 2024/09
+2026-04-12 16:25:56 INFO     sources.lottery_net:   lottery.net: 30 rows  IL/pick4/midday  2024/09  [pick-4-midday]
+2026-04-12 16:25:56 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick4 | 2024/10
+2026-04-12 16:25:56 INFO     sources.lottery_net:   lottery.net: 31 rows  IL/pick4/midday  2024/10  [pick-4-midday]
+2026-04-12 16:25:56 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick4 | 2024/11
+2026-04-12 16:25:56 INFO     sources.lottery_net:   lottery.net: 30 rows  IL/pick4/midday  2024/11  [pick-4-midday]
+2026-04-12 16:25:56 INFO     sources.base: Fetching SourceName.LOTTERY_NET | IL | pick4 | 2024/12
+2026-04-12 16:25:56 INFO     sources.lottery_net:   lottery.net: 31 rows  IL/pick4/midday  2024/12  [pick-4-midday]
+2026-04-12 16:25:56 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:56 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:56 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 732, 'observations_written': 732, 'reconcile_stats': {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+TN,pick3,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state TN --game pick3 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=TN game=pick3 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  680
+  Observations written: 680
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        680
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:25:58 INFO     sources.lottery_net:   lottery.net: 26 rows  TN/pick3/midday  2024/04  [cash-3-midday]
+2026-04-12 16:25:58 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick3 | 2024/05
+2026-04-12 16:25:58 INFO     sources.lottery_net:   lottery.net: 27 rows  TN/pick3/midday  2024/05  [cash-3-midday]
+2026-04-12 16:25:58 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick3 | 2024/06
+2026-04-12 16:25:58 INFO     sources.lottery_net:   lottery.net: 25 rows  TN/pick3/midday  2024/06  [cash-3-midday]
+2026-04-12 16:25:58 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick3 | 2024/07
+2026-04-12 16:25:58 INFO     sources.lottery_net:   lottery.net: 27 rows  TN/pick3/midday  2024/07  [cash-3-midday]
+2026-04-12 16:25:58 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick3 | 2024/08
+2026-04-12 16:25:58 INFO     sources.lottery_net:   lottery.net: 27 rows  TN/pick3/midday  2024/08  [cash-3-midday]
+2026-04-12 16:25:58 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick3 | 2024/09
+2026-04-12 16:25:58 INFO     sources.lottery_net:   lottery.net: 25 rows  TN/pick3/midday  2024/09  [cash-3-midday]
+2026-04-12 16:25:58 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick3 | 2024/10
+2026-04-12 16:25:58 INFO     sources.lottery_net:   lottery.net: 27 rows  TN/pick3/midday  2024/10  [cash-3-midday]
+2026-04-12 16:25:58 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick3 | 2024/11
+2026-04-12 16:25:58 INFO     sources.lottery_net:   lottery.net: 26 rows  TN/pick3/midday  2024/11  [cash-3-midday]
+2026-04-12 16:25:58 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick3 | 2024/12
+2026-04-12 16:25:58 INFO     sources.lottery_net:   lottery.net: 26 rows  TN/pick3/midday  2024/12  [cash-3-midday]
+2026-04-12 16:25:58 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:25:58 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 680, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:25:58 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 680, 'observations_written': 680, 'reconcile_stats': {'accepted': 0, 'duplicate': 680, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+TN,pick4,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state TN --game pick4 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=TN game=pick4 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  680
+  Observations written: 680
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        680
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:26:01 INFO     sources.lottery_net:   lottery.net: 26 rows  TN/pick4/midday  2024/04  [cash-4-midday]
+2026-04-12 16:26:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick4 | 2024/05
+2026-04-12 16:26:01 INFO     sources.lottery_net:   lottery.net: 27 rows  TN/pick4/midday  2024/05  [cash-4-midday]
+2026-04-12 16:26:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick4 | 2024/06
+2026-04-12 16:26:01 INFO     sources.lottery_net:   lottery.net: 25 rows  TN/pick4/midday  2024/06  [cash-4-midday]
+2026-04-12 16:26:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick4 | 2024/07
+2026-04-12 16:26:01 INFO     sources.lottery_net:   lottery.net: 27 rows  TN/pick4/midday  2024/07  [cash-4-midday]
+2026-04-12 16:26:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick4 | 2024/08
+2026-04-12 16:26:01 INFO     sources.lottery_net:   lottery.net: 27 rows  TN/pick4/midday  2024/08  [cash-4-midday]
+2026-04-12 16:26:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick4 | 2024/09
+2026-04-12 16:26:01 INFO     sources.lottery_net:   lottery.net: 25 rows  TN/pick4/midday  2024/09  [cash-4-midday]
+2026-04-12 16:26:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick4 | 2024/10
+2026-04-12 16:26:01 INFO     sources.lottery_net:   lottery.net: 27 rows  TN/pick4/midday  2024/10  [cash-4-midday]
+2026-04-12 16:26:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick4 | 2024/11
+2026-04-12 16:26:01 INFO     sources.lottery_net:   lottery.net: 26 rows  TN/pick4/midday  2024/11  [cash-4-midday]
+2026-04-12 16:26:01 INFO     sources.base: Fetching SourceName.LOTTERY_NET | TN | pick4 | 2024/12
+2026-04-12 16:26:01 INFO     sources.lottery_net:   lottery.net: 26 rows  TN/pick4/midday  2024/12  [cash-4-midday]
+2026-04-12 16:26:01 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:26:01 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 680, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:26:01 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 680, 'observations_written': 680, 'reconcile_stats': {'accepted': 0, 'duplicate': 680, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+PA,pick3,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state PA --game pick3 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=PA game=pick3 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  732
+  Observations written: 732
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        732
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:26:03 INFO     sources.lottery_net:   lottery.net: 30 rows  PA/pick3/midday  2024/04  [pick-3-day]
+2026-04-12 16:26:03 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick3 | 2024/05
+2026-04-12 16:26:03 INFO     sources.lottery_net:   lottery.net: 31 rows  PA/pick3/midday  2024/05  [pick-3-day]
+2026-04-12 16:26:03 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick3 | 2024/06
+2026-04-12 16:26:03 INFO     sources.lottery_net:   lottery.net: 30 rows  PA/pick3/midday  2024/06  [pick-3-day]
+2026-04-12 16:26:03 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick3 | 2024/07
+2026-04-12 16:26:03 INFO     sources.lottery_net:   lottery.net: 31 rows  PA/pick3/midday  2024/07  [pick-3-day]
+2026-04-12 16:26:03 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick3 | 2024/08
+2026-04-12 16:26:03 INFO     sources.lottery_net:   lottery.net: 31 rows  PA/pick3/midday  2024/08  [pick-3-day]
+2026-04-12 16:26:03 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick3 | 2024/09
+2026-04-12 16:26:03 INFO     sources.lottery_net:   lottery.net: 30 rows  PA/pick3/midday  2024/09  [pick-3-day]
+2026-04-12 16:26:03 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick3 | 2024/10
+2026-04-12 16:26:03 INFO     sources.lottery_net:   lottery.net: 31 rows  PA/pick3/midday  2024/10  [pick-3-day]
+2026-04-12 16:26:03 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick3 | 2024/11
+2026-04-12 16:26:03 INFO     sources.lottery_net:   lottery.net: 30 rows  PA/pick3/midday  2024/11  [pick-3-day]
+2026-04-12 16:26:03 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick3 | 2024/12
+2026-04-12 16:26:03 INFO     sources.lottery_net:   lottery.net: 31 rows  PA/pick3/midday  2024/12  [pick-3-day]
+2026-04-12 16:26:03 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:26:03 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:26:03 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 732, 'observations_written': 732, 'reconcile_stats': {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+PA,pick4,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state PA --game pick4 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=PA game=pick4 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  732
+  Observations written: 732
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        732
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:26:06 INFO     sources.lottery_net:   lottery.net: 30 rows  PA/pick4/midday  2024/04  [pick-4-day]
+2026-04-12 16:26:06 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick4 | 2024/05
+2026-04-12 16:26:06 INFO     sources.lottery_net:   lottery.net: 31 rows  PA/pick4/midday  2024/05  [pick-4-day]
+2026-04-12 16:26:06 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick4 | 2024/06
+2026-04-12 16:26:06 INFO     sources.lottery_net:   lottery.net: 30 rows  PA/pick4/midday  2024/06  [pick-4-day]
+2026-04-12 16:26:06 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick4 | 2024/07
+2026-04-12 16:26:06 INFO     sources.lottery_net:   lottery.net: 31 rows  PA/pick4/midday  2024/07  [pick-4-day]
+2026-04-12 16:26:06 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick4 | 2024/08
+2026-04-12 16:26:06 INFO     sources.lottery_net:   lottery.net: 31 rows  PA/pick4/midday  2024/08  [pick-4-day]
+2026-04-12 16:26:06 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick4 | 2024/09
+2026-04-12 16:26:06 INFO     sources.lottery_net:   lottery.net: 30 rows  PA/pick4/midday  2024/09  [pick-4-day]
+2026-04-12 16:26:06 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick4 | 2024/10
+2026-04-12 16:26:06 INFO     sources.lottery_net:   lottery.net: 31 rows  PA/pick4/midday  2024/10  [pick-4-day]
+2026-04-12 16:26:06 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick4 | 2024/11
+2026-04-12 16:26:06 INFO     sources.lottery_net:   lottery.net: 30 rows  PA/pick4/midday  2024/11  [pick-4-day]
+2026-04-12 16:26:06 INFO     sources.base: Fetching SourceName.LOTTERY_NET | PA | pick4 | 2024/12
+2026-04-12 16:26:06 INFO     sources.lottery_net:   lottery.net: 31 rows  PA/pick4/midday  2024/12  [pick-4-day]
+2026-04-12 16:26:06 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:26:06 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:26:06 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 732, 'observations_written': 732, 'reconcile_stats': {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+WA,pick3,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state WA --game pick3 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=WA game=pick3 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            1
+  Raw results fetched:  366
+  Observations written: 366
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        366
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:26:07 INFO     sources.lottery_net:   lottery.net: 30 rows  WA/pick3/evening  2024/04  [pick-3]
+2026-04-12 16:26:07 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick3 | 2024/05
+2026-04-12 16:26:07 INFO     sources.lottery_net:   lottery.net: 31 rows  WA/pick3/evening  2024/05  [pick-3]
+2026-04-12 16:26:07 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick3 | 2024/06
+2026-04-12 16:26:07 INFO     sources.lottery_net:   lottery.net: 30 rows  WA/pick3/evening  2024/06  [pick-3]
+2026-04-12 16:26:07 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick3 | 2024/07
+2026-04-12 16:26:07 INFO     sources.lottery_net:   lottery.net: 31 rows  WA/pick3/evening  2024/07  [pick-3]
+2026-04-12 16:26:07 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick3 | 2024/08
+2026-04-12 16:26:07 INFO     sources.lottery_net:   lottery.net: 31 rows  WA/pick3/evening  2024/08  [pick-3]
+2026-04-12 16:26:07 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick3 | 2024/09
+2026-04-12 16:26:07 INFO     sources.lottery_net:   lottery.net: 30 rows  WA/pick3/evening  2024/09  [pick-3]
+2026-04-12 16:26:07 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick3 | 2024/10
+2026-04-12 16:26:07 INFO     sources.lottery_net:   lottery.net: 31 rows  WA/pick3/evening  2024/10  [pick-3]
+2026-04-12 16:26:07 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick3 | 2024/11
+2026-04-12 16:26:07 INFO     sources.lottery_net:   lottery.net: 30 rows  WA/pick3/evening  2024/11  [pick-3]
+2026-04-12 16:26:07 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick3 | 2024/12
+2026-04-12 16:26:07 INFO     sources.lottery_net:   lottery.net: 31 rows  WA/pick3/evening  2024/12  [pick-3]
+2026-04-12 16:26:07 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:26:07 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 366, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:26:07 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 1, 'raw_results': 366, 'observations_written': 366, 'reconcile_stats': {'accepted': 0, 'duplicate': 366, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+WA,pick4,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state WA --game pick4 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=WA game=pick4 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            1
+  Raw results fetched:  7
+  Observations written: 7
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        7
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:26:08 INFO     sources.lottery_net:   lottery.net: 0 rows  WA/pick4/evening  2024/04  [match-4]
+2026-04-12 16:26:08 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick4 | 2024/05
+2026-04-12 16:26:08 INFO     sources.lottery_net:   lottery.net: 1 rows  WA/pick4/evening  2024/05  [match-4]
+2026-04-12 16:26:08 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick4 | 2024/06
+2026-04-12 16:26:08 INFO     sources.lottery_net:   lottery.net: 0 rows  WA/pick4/evening  2024/06  [match-4]
+2026-04-12 16:26:08 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick4 | 2024/07
+2026-04-12 16:26:08 INFO     sources.lottery_net:   lottery.net: 0 rows  WA/pick4/evening  2024/07  [match-4]
+2026-04-12 16:26:08 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick4 | 2024/08
+2026-04-12 16:26:08 INFO     sources.lottery_net:   lottery.net: 0 rows  WA/pick4/evening  2024/08  [match-4]
+2026-04-12 16:26:08 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick4 | 2024/09
+2026-04-12 16:26:08 INFO     sources.lottery_net:   lottery.net: 0 rows  WA/pick4/evening  2024/09  [match-4]
+2026-04-12 16:26:08 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick4 | 2024/10
+2026-04-12 16:26:08 INFO     sources.lottery_net:   lottery.net: 1 rows  WA/pick4/evening  2024/10  [match-4]
+2026-04-12 16:26:08 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick4 | 2024/11
+2026-04-12 16:26:08 INFO     sources.lottery_net:   lottery.net: 1 rows  WA/pick4/evening  2024/11  [match-4]
+2026-04-12 16:26:08 INFO     sources.base: Fetching SourceName.LOTTERY_NET | WA | pick4 | 2024/12
+2026-04-12 16:26:08 INFO     sources.lottery_net:   lottery.net: 1 rows  WA/pick4/evening  2024/12  [match-4]
+2026-04-12 16:26:08 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:26:08 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 7, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:26:08 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 1, 'raw_results': 7, 'observations_written': 7, 'reconcile_stats': {'accepted': 0, 'duplicate': 7, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
+MA,pick3,2024,skipped,unsupported_registry_missing,1,/workspaces/lottery-engine/.venv/bin/python -m cli.validate_state --state MA --game pick3 --month 2024-01 --source lottery.net --dry-run,"    2 mappings across 1 source(s)
+  ⚠ Slugs: ESTIMATED — verify before backfill  WARN
+    2/2 mappings are ESTIMATED (unconfirmed on live site).
+      check → https://www.lottery.net/massachusetts/numbers-midday/numbers/2024
+      check → https://www.lottery.net/massachusetts/numbers-evening/numbers/2024
+      Run: python -m cli.validate_state --state MA --game pick3 --month 2024-01 --source lottery.net --dry-run
+  – Registry metadata                          SKIP
+    REGISTRY_META not found in definition file
+
+  ↳ WARN  (1 warning(s))
+
+── 2. URL planning ──
+  ✗ URL generation                             FAIL
+    No tasks generated. Check lifecycle windows and source coverage years.
+  ↳ FAIL  (1 check(s) failed)
+
+══════════════════════════════════════════════════════════════
+  RESULT: FAIL  (1 failure(s), 1 warning(s))
+══════════════════════════════════════════════════════════════
+  STATE=MA  GAME=pick3  MONTH=2024-01  SOURCE=lottery.net  RESULT=FAIL  REASON=""URL generation: No tasks generated. Check lifecycle windows and source coverage """,
+MA,pick4,2024,ingested,ingest_success,0,/workspaces/lottery-engine/.venv/bin/python -m cli.ingest --state MA --game pick4 --start 2024-01-01 --end 2024-12-31 --source lottery.net,"Initializing database...
+
+Ingest: state=MA game=pick4 source=lottery.net 2024-01-01..2024-12-31
+
+--- Ingest Summary ---
+  Tasks run:            2
+  Raw results fetched:  732
+  Observations written: 732
+  Reconcile — accepted:         0
+  Reconcile — duplicate:        732
+  Reconcile — conflict (new):   0
+  Reconcile — conflict (kept):  0
+  Reconcile — errors:           0","2026-04-12 16:26:11 INFO     sources.lottery_net:   lottery.net: 30 rows  MA/pick4/midday  2024/04  [numbers-midday]
+2026-04-12 16:26:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MA | pick4 | 2024/05
+2026-04-12 16:26:11 INFO     sources.lottery_net:   lottery.net: 31 rows  MA/pick4/midday  2024/05  [numbers-midday]
+2026-04-12 16:26:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MA | pick4 | 2024/06
+2026-04-12 16:26:11 INFO     sources.lottery_net:   lottery.net: 30 rows  MA/pick4/midday  2024/06  [numbers-midday]
+2026-04-12 16:26:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MA | pick4 | 2024/07
+2026-04-12 16:26:11 INFO     sources.lottery_net:   lottery.net: 31 rows  MA/pick4/midday  2024/07  [numbers-midday]
+2026-04-12 16:26:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MA | pick4 | 2024/08
+2026-04-12 16:26:11 INFO     sources.lottery_net:   lottery.net: 31 rows  MA/pick4/midday  2024/08  [numbers-midday]
+2026-04-12 16:26:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MA | pick4 | 2024/09
+2026-04-12 16:26:11 INFO     sources.lottery_net:   lottery.net: 30 rows  MA/pick4/midday  2024/09  [numbers-midday]
+2026-04-12 16:26:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MA | pick4 | 2024/10
+2026-04-12 16:26:11 INFO     sources.lottery_net:   lottery.net: 31 rows  MA/pick4/midday  2024/10  [numbers-midday]
+2026-04-12 16:26:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MA | pick4 | 2024/11
+2026-04-12 16:26:11 INFO     sources.lottery_net:   lottery.net: 30 rows  MA/pick4/midday  2024/11  [numbers-midday]
+2026-04-12 16:26:11 INFO     sources.base: Fetching SourceName.LOTTERY_NET | MA | pick4 | 2024/12
+2026-04-12 16:26:11 INFO     sources.lottery_net:   lottery.net: 31 rows  MA/pick4/midday  2024/12  [numbers-midday]
+2026-04-12 16:26:11 INFO     orchestrator.runner: Running reconciliation...
+2026-04-12 16:26:11 INFO     orchestrator.reconciler: Reconciliation complete: {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}
+2026-04-12 16:26:11 INFO     orchestrator.runner: Ingest complete: {'tasks_run': 2, 'raw_results': 732, 'observations_written': 732, 'reconcile_stats': {'accepted': 0, 'duplicate': 732, 'conflict_new_wins': 0, 'conflict_existing_wins': 0, 'errors': 0}}"
