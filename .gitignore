@@ -6,8 +6,5 @@ db/*.db
 .env
 
 lottery.db
-<<<<<<< HEAD
-=======
 
-lottery.db
->>>>>>> 7ad2170 (Ignore local lottery database)
+
