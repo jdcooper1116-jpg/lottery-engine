@@ -34,6 +34,11 @@ def get_coverage_gaps(
 
     Dates that fall outside the job's active_start_date / active_end_date
     are excluded — those are never gaps, they are correct absences.
+
+    IMPORTANT: A slot is NOT a gap if a draw row already exists in the
+    draws table for it.  Early ingest runs wrote draws without always
+    writing scrape_coverage rows; treating those as gaps produces false
+    coverage warnings on fully-ingested historical periods.
     """
     gaps: list[CoverageGap] = []
 
@@ -44,7 +49,32 @@ def get_coverage_gaps(
     if not scheduled_slots:
         return gaps
 
-    # Query coverage for the date range
+    # --- NEW: build the set of slots that have an accepted draw row ----------
+    # This is the authoritative check: if a draw exists, the slot is covered
+    # regardless of what scrape_coverage says.
+    dt_filter_sql = ""
+    params_draws: list = [state, game_type, start_date.isoformat(), end_date.isoformat()]
+    if draw_times:
+        placeholders = ",".join("?" * len(draw_times))
+        dt_filter_sql = f"AND draw_time IN ({placeholders})"
+        params_draws.extend(draw_times)
+
+    draw_rows = conn.execute(
+        f"""
+        SELECT draw_date, draw_time
+        FROM draws
+        WHERE state=? AND game_type=?
+          AND draw_date BETWEEN ? AND ?
+          {dt_filter_sql}
+        """,
+        params_draws,
+    ).fetchall()
+    covered_by_draw: set[tuple[str, str]] = {
+        (r["draw_date"], r["draw_time"]) for r in draw_rows
+    }
+    # -------------------------------------------------------------------------
+
+    # Query scrape_coverage for explicit not_scraped / scrape_error rows
     dt_filter = ""
     params: list = [state, game_type, start_date.isoformat(), end_date.isoformat()]
     if draw_times:
@@ -54,22 +84,13 @@ def get_coverage_gaps(
 
     rows = conn.execute(
         f"""
-        SELECT sc.draw_date, sc.draw_time, sc.coverage_status, sc.last_attempted_at
-        FROM scrape_coverage sc
-        WHERE sc.state=? AND sc.game_type=?
-          AND sc.draw_date BETWEEN ? AND ?
+        SELECT draw_date, draw_time, coverage_status, last_attempted_at
+        FROM scrape_coverage
+        WHERE state=? AND game_type=?
+          AND draw_date BETWEEN ? AND ?
           {dt_filter}
-          AND sc.rowid = (
-              SELECT sc2.rowid
-              FROM scrape_coverage sc2
-              WHERE sc2.state = sc.state
-                AND sc2.game_type = sc.game_type
-                AND sc2.draw_date = sc.draw_date
-                AND sc2.draw_time = sc.draw_time
-              ORDER BY COALESCE(sc2.last_attempted_at, '') DESC, sc2.rowid DESC
-              LIMIT 1
-          )
-        ORDER BY sc.draw_date, sc.draw_time
+          AND coverage_status IN ('not_scraped','scrape_error')
+        ORDER BY draw_date, draw_time
         """,
         params,
     ).fetchall()
@@ -79,20 +100,24 @@ def get_coverage_gaps(
         for r in rows
     }
 
-    # Report gaps only for scheduled slots
+    # Report gaps only for scheduled slots that are not already covered by a draw
     for slot_date, slot_time in scheduled_slots:
         slot_key = (slot_date.isoformat(), slot_time)
+
+        # If a draw row exists for this slot, it is covered — not a gap
+        if slot_key in covered_by_draw:
+            continue
+
         if slot_key in coverage_map:
             row = coverage_map[slot_key]
-            if row["coverage_status"] in ("not_scraped", "scrape_error"):
-                gaps.append(CoverageGap(
-                    draw_date=row["draw_date"],
-                    draw_time=row["draw_time"],
-                    coverage_status=row["coverage_status"],
-                    last_attempted_at=row["last_attempted_at"],
-                ))
+            gaps.append(CoverageGap(
+                draw_date=row["draw_date"],
+                draw_time=row["draw_time"],
+                coverage_status=row["coverage_status"],
+                last_attempted_at=row["last_attempted_at"],
+            ))
         else:
-            # Slot is scheduled but has NO coverage row at all = never attempted
+            # Slot is scheduled, no draw exists, no coverage row → never attempted
             gaps.append(CoverageGap(
                 draw_date=slot_date.isoformat(),
                 draw_time=slot_time,
@@ -158,3 +183,4 @@ def _draw_is_scheduled_on_day(job, target: date) -> bool:
         return day_names[target.weekday()] in [d.lower() for d in day_list]
     except Exception:
         return True  # unknown format, assume scheduled
+        

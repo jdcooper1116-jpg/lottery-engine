@@ -99,6 +99,29 @@ class CoverageGap:
     last_attempted_at: Optional[str]
 
 
+@dataclass
+class CandidateResult:
+    """Per-candidate diagnosis for a backtest run.
+
+    status values:
+      "hit"          — at least one draw matched in the window
+      "no_match"     — window searched, no draw matched
+                       (if coverage_complete=False, this is inconclusive)
+
+    miss_reason values (when status == "no_match"):
+      "no_draw_matched"      — searched all covered draws, none matched
+      "window_has_gaps"      — gaps exist; match status is inconclusive
+      ""                     — hit, no reason needed
+    """
+    candidate:          str
+    candidate_sorted:   str        # sorted digits — makes box logic transparent
+    status:             str        # "hit" | "no_match"
+    hit_count:          int
+    hits:               list       # list[MatchHit]
+    coverage_complete:  bool       # True if window had zero coverage gaps
+    miss_reason:        str        # see above
+
+
 # ------------------------------------------------------------------
 # Request / response models
 # ------------------------------------------------------------------
@@ -172,16 +195,21 @@ class DreamBacktestRequest:
 
 @dataclass
 class DreamBacktestResponse:
-    request:          DreamBacktestRequest
-    window_start:     date
-    window_end:       date
-    all_draws:        list[DrawRecord]
-    hits:             list[MatchHit]
-    hit_count:        int
-    hit_dates:        list[str]
-    hit_draw_times:   list[str]
-    coverage_gaps:    list[CoverageGap]
-    summary:          str
+    request:            DreamBacktestRequest
+    window_start:       date
+    window_end:         date
+    all_draws:          list[DrawRecord]
+    hits:               list[MatchHit]
+    hit_count:          int
+    hit_dates:          list[str]
+    hit_draw_times:     list[str]
+    coverage_gaps:      list[CoverageGap]
+    summary:            str
+    # --- enriched metadata ---
+    match_mode:         str = "exact"      # mode actually used for this run
+    draws_searched:     int = 0            # total draws in window (coverage measure)
+    coverage_complete:  bool = True        # False if any gap in window
+    candidate_results:  list = field(default_factory=list)  # list[CandidateResult]
 
 
 @dataclass
@@ -198,3 +226,4 @@ class BatchBacktestResponse:
     total_draws_searched:  int
     jobs_with_hits:        int
     aggregate_summary:     str
+    

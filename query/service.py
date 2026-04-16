@@ -16,7 +16,7 @@ from typing import Optional
 from db.connection import get_connection, get_db_path
 from query.models import (
     QueryFilters,
-    DrawRecord, MatchHit, CoverageGap,
+    DrawRecord, MatchHit, CoverageGap, CandidateResult,
     DateRangeRequest, DateRangeResponse,
     WindowSearchRequest, WindowSearchResponse,
     CandidateMatchRequest, CandidateMatchResponse,
@@ -143,9 +143,16 @@ def backtest_numbers(req: DreamBacktestRequest) -> DreamBacktestResponse:
     """
     Full backtest for a single dream record.
     Primary entry point for the dream-number app.
+
+    Supports match_mode values in req.filters.match_mode:
+      "exact" / "straight" — digit-for-digit match (same position)
+      "box"                 — any permutation of the candidate's digits
+      "digit"               — every digit in candidate appears in winning
+      "pair"                — any consecutive 2-digit pair matches
     """
     window_start = req.anchor_date
     window_end   = req.anchor_date + timedelta(days=req.lookahead_days)
+    match_mode   = req.filters.match_mode
 
     with get_connection() as conn:
         draws = _fetch_draws(
@@ -162,14 +169,16 @@ def backtest_numbers(req: DreamBacktestRequest) -> DreamBacktestResponse:
             req.filters.draw_times,
         )
 
-    hit_pairs = filter_draws_by_candidates(draws, req.candidates, req.filters.match_mode)
+    coverage_complete = len(gaps) == 0
+
+    hit_pairs = filter_draws_by_candidates(draws, req.candidates, match_mode)
     hits = [
         MatchHit(
             candidate=candidate,
             draw_date=draw.draw_date,
             draw_time=draw.draw_time,
             winning_number=draw.winning_number,
-            match_type=req.filters.match_mode,
+            match_type=match_mode,
             is_verified=draw.is_verified,
             canonical_key=draw.canonical_key,
             source_name=draw.source_name,
@@ -180,7 +189,13 @@ def backtest_numbers(req: DreamBacktestRequest) -> DreamBacktestResponse:
 
     hit_dates      = sorted(set(h.draw_date for h in hits))
     hit_draw_times = [h.draw_time for h in hits]
-    summary        = _build_summary(req, hits, window_start, window_end)
+    summary        = _build_summary(req, hits, window_start, window_end, match_mode)
+
+    # --- build per-candidate results ----------------------------------------
+    candidate_results = _build_candidate_results(
+        req.candidates, hits, coverage_complete, len(draws)
+    )
+    # -------------------------------------------------------------------------
 
     return DreamBacktestResponse(
         request=req,
@@ -193,6 +208,10 @@ def backtest_numbers(req: DreamBacktestRequest) -> DreamBacktestResponse:
         hit_draw_times=hit_draw_times,
         coverage_gaps=gaps,
         summary=summary,
+        match_mode=match_mode,
+        draws_searched=len(draws),
+        coverage_complete=coverage_complete,
+        candidate_results=candidate_results,
     )
 
 
@@ -215,6 +234,7 @@ def batch_backtest(req: BatchBacktestRequest) -> BatchBacktestResponse:
         for job in req.jobs:
             window_start = job.anchor_date
             window_end   = job.anchor_date + timedelta(days=job.lookahead_days)
+            match_mode   = job.filters.match_mode
 
             draws = _fetch_draws(
                 conn,
@@ -230,14 +250,16 @@ def batch_backtest(req: BatchBacktestRequest) -> BatchBacktestResponse:
                 job.filters.draw_times,
             )
 
-            hit_pairs = filter_draws_by_candidates(draws, job.candidates, job.filters.match_mode)
+            coverage_complete = len(gaps) == 0
+
+            hit_pairs = filter_draws_by_candidates(draws, job.candidates, match_mode)
             hits = [
                 MatchHit(
                     candidate=c,
                     draw_date=d.draw_date,
                     draw_time=d.draw_time,
                     winning_number=d.winning_number,
-                    match_type=job.filters.match_mode,
+                    match_type=match_mode,
                     is_verified=d.is_verified,
                     canonical_key=d.canonical_key,
                     source_name=d.source_name,
@@ -249,6 +271,10 @@ def batch_backtest(req: BatchBacktestRequest) -> BatchBacktestResponse:
             hit_dates      = sorted(set(h.draw_date for h in hits))
             hit_draw_times = [h.draw_time for h in hits]
 
+            candidate_results = _build_candidate_results(
+                job.candidates, hits, coverage_complete, len(draws)
+            )
+
             resp = DreamBacktestResponse(
                 request=job,
                 window_start=window_start,
@@ -259,7 +285,11 @@ def batch_backtest(req: BatchBacktestRequest) -> BatchBacktestResponse:
                 hit_dates=hit_dates,
                 hit_draw_times=hit_draw_times,
                 coverage_gaps=gaps,
-                summary=_build_summary(job, hits, window_start, window_end),
+                summary=_build_summary(job, hits, window_start, window_end, match_mode),
+                match_mode=match_mode,
+                draws_searched=len(draws),
+                coverage_complete=coverage_complete,
+                candidate_results=candidate_results,
             )
             results.append(resp)
             total_hits    += len(hits)
@@ -376,22 +406,79 @@ def _build_summary(
     hits: list[MatchHit],
     window_start: date,
     window_end: date,
+    match_mode: str = "exact",
 ) -> str:
-    label = f" [{req.label}]" if req.label else ""
+    label    = f" [{req.label}]" if req.label else ""
+    mode_tag = f" (mode={match_mode})"
     if not hits:
         return (
-            f"{req.state} {req.game_type}{label}: "
+            f"{req.state} {req.game_type}{label}{mode_tag}: "
             f"0 hits in {req.lookahead_days}-day window "
             f"({window_start} to {window_end}). "
             f"Candidates: {', '.join(req.candidates)}."
         )
     hit_parts = [
-        f"{h.candidate} on {h.draw_date} {h.draw_time}"
+        f"{h.candidate}→{h.winning_number} on {h.draw_date} {h.draw_time}"
         for h in hits
     ]
     return (
-        f"{req.state} {req.game_type}{label}: "
+        f"{req.state} {req.game_type}{label}{mode_tag}: "
         f"{len(hits)} hit(s) in {req.lookahead_days}-day window "
         f"({window_start} to {window_end}): "
         + "; ".join(hit_parts) + "."
     )
+
+
+def _build_candidate_results(
+    candidates: list[str],
+    hits: list[MatchHit],
+    coverage_complete: bool,
+    draws_searched: int,
+) -> list[CandidateResult]:
+    """
+    Build per-candidate diagnosis: did it hit, and if not, why not.
+
+    status:
+      "hit"      — at least one matching draw found
+      "no_match" — no draw matched
+
+    miss_reason (when status == "no_match"):
+      "no_draw_matched"  — draws were searched, none matched
+      "window_has_gaps"  — window has coverage gaps, result is inconclusive
+      "no_draws_in_window" — window returned 0 draws (nothing to search)
+    """
+    # Build a lookup: candidate -> list of hits
+    hits_by_candidate: dict[str, list[MatchHit]] = {}
+    for h in hits:
+        hits_by_candidate.setdefault(h.candidate, []).append(h)
+
+    results: list[CandidateResult] = []
+    for c in candidates:
+        c_sorted   = "".join(sorted(c))
+        c_hits     = hits_by_candidate.get(c, [])
+        hit        = bool(c_hits)
+
+        if hit:
+            status      = "hit"
+            miss_reason = ""
+        else:
+            status = "no_match"
+            if draws_searched == 0:
+                miss_reason = "no_draws_in_window"
+            elif not coverage_complete:
+                miss_reason = "window_has_gaps"
+            else:
+                miss_reason = "no_draw_matched"
+
+        results.append(CandidateResult(
+            candidate=c,
+            candidate_sorted=c_sorted,
+            status=status,
+            hit_count=len(c_hits),
+            hits=c_hits,
+            coverage_complete=coverage_complete,
+            miss_reason=miss_reason,
+        ))
+
+    return results
+    
