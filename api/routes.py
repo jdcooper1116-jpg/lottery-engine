@@ -9,35 +9,43 @@ without starting the HTTP server.
 Start server:
     uvicorn api.routes:app --reload --port 8000
 """
+
 from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
 from datetime import date
+from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import Body, FastAPI, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from query.models import (
+    BatchBacktestRequest,
+    CandidateMatchRequest,
+    DateRangeRequest,
+    DreamBacktestRequest,
+    QueryFilters,
+    WindowSearchRequest,
+)
 from query.service import (
-    get_draws_for_date_range,
-    search_results_by_window,
-    match_candidate_numbers,
     backtest_numbers,
     batch_backtest,
+    get_draws_for_date_range,
     get_latest_results,
     get_schedule_for_date,
+    match_candidate_numbers,
+    search_results_by_window,
 )
-from query.models import (
-    QueryFilters,
-    DateRangeRequest,
-    WindowSearchRequest,
-    CandidateMatchRequest,
-    DreamBacktestRequest,
-    BatchBacktestRequest,
-)
+from registry.enums import DrawTime, SourceName
 from registry.loader import get_all_states, get_game_types_for_state
-from registry.enums import SourceName, DrawTime
 from orchestrator.coverage import get_coverage_stats
 from db.connection import get_connection
+
 
 app = FastAPI(
     title="Lottery Results Engine",
@@ -47,16 +55,97 @@ app = FastAPI(
 
 
 # ------------------------------------------------------------------
+# Protected admin helpers / routes
+# ------------------------------------------------------------------
+
+def _require_ingest_token(x_ingest_token: str | None) -> None:
+    expected = os.environ.get("INGEST_ADMIN_TOKEN", "").strip()
+    if not expected:
+        raise HTTPException(status_code=500, detail="INGEST_ADMIN_TOKEN is not configured")
+    if x_ingest_token != expected:
+        raise HTTPException(status_code=401, detail="Invalid ingest token")
+
+
+@app.post("/admin/ingest/recent")
+def admin_ingest_recent(
+    payload: dict | None = Body(default=None),
+    x_ingest_token: str | None = Header(default=None, alias="X-Ingest-Token"),
+):
+    _require_ingest_token(x_ingest_token)
+
+    days_back = 3
+    if isinstance(payload, dict) and "days_back" in payload:
+        days_back = int(payload["days_back"])
+
+    script_path = Path("scripts/ingest_recent_all_states.py")
+    if not script_path.exists():
+        raise HTTPException(status_code=500, detail=f"Missing script: {script_path}")
+
+    cmd = [
+        sys.executable,
+        str(script_path),
+        "--days-back",
+        str(days_back),
+    ]
+
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+
+    status_path = Path(os.environ.get("INGEST_STATUS_PATH", "/data/ingest_recent_status.json"))
+    status: dict = {}
+    if status_path.exists():
+        try:
+            status = json.loads(status_path.read_text(encoding="utf-8"))
+        except Exception:
+            status = {"warning": f"Could not parse {status_path}"}
+
+    if proc.returncode != 0:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Recent ingest failed",
+                "stdout_tail": proc.stdout[-1500:],
+                "stderr_tail": proc.stderr[-1500:],
+                "status": status,
+            },
+        )
+
+    return {
+        "ok": True,
+        "message": "Recent ingest completed",
+        "status": status,
+        "stdout_tail": proc.stdout[-1500:],
+    }
+
+
+@app.get("/admin/ingest/status")
+def admin_ingest_status(
+    x_ingest_token: str | None = Header(default=None, alias="X-Ingest-Token"),
+):
+    _require_ingest_token(x_ingest_token)
+
+    status_path = Path(os.environ.get("INGEST_STATUS_PATH", "/data/ingest_recent_status.json"))
+    if not status_path.exists():
+        return {"ok": True, "status": None, "message": "No ingest status file yet"}
+
+    try:
+        status = json.loads(status_path.read_text(encoding="utf-8"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not read status file: {e}")
+
+    return {"ok": True, "status": status}
+
+
+# ------------------------------------------------------------------
 # Pydantic request bodies
 # ------------------------------------------------------------------
 
 class FilterParams(BaseModel):
-    draw_times:            Optional[list[str]] = None
-    match_mode:            str                 = "exact"
-    include_verified_only: bool                = False
-    include_unverified:    bool                = True
-    source_name:           Optional[str]       = None
-    exclude_conflicts:     bool                = False
+    draw_times: Optional[list[str]] = None
+    match_mode: str = "exact"
+    include_verified_only: bool = False
+    include_unverified: bool = True
+    source_name: Optional[str] = None
+    exclude_conflicts: bool = False
 
     def to_filters(self) -> QueryFilters:
         return QueryFilters(
@@ -70,13 +159,13 @@ class FilterParams(BaseModel):
 
 
 class BacktestBody(BaseModel):
-    state:          str
-    game_type:      str
-    anchor_date:    date
-    lookahead_days: int                  = Field(default=7, ge=1, le=30)
-    candidates:     list[str]            = Field(default_factory=list)
-    filters:        FilterParams         = Field(default_factory=FilterParams)
-    label:          str                  = ""
+    state: str
+    game_type: str
+    anchor_date: date
+    lookahead_days: int = Field(default=7, ge=1, le=30)
+    candidates: list[str] = Field(default_factory=list)
+    filters: FilterParams = Field(default_factory=FilterParams)
+    label: str = ""
 
 
 class BatchBacktestBody(BaseModel):
@@ -84,12 +173,12 @@ class BatchBacktestBody(BaseModel):
 
 
 class MatchBody(BaseModel):
-    state:      str
-    game_type:  str
+    state: str
+    game_type: str
     start_date: date
-    end_date:   date
+    end_date: date
     candidates: list[str]
-    filters:    FilterParams = Field(default_factory=FilterParams)
+    filters: FilterParams = Field(default_factory=FilterParams)
 
 
 # ------------------------------------------------------------------
@@ -123,19 +212,21 @@ def list_draw_times():
 
 @app.get("/draws")
 def draws_range(
-    state:      str,
-    game_type:  str,
-    start:      date,
-    end:        date,
+    state: str,
+    game_type: str,
+    start: date,
+    end: date,
     draw_times: Optional[str] = Query(default=None, description="Comma-separated canonical draw times"),
     verified_only: bool = False,
-    source_name:   Optional[str] = None,
+    source_name: Optional[str] = None,
     exclude_conflicts: bool = False,
 ):
     dt_list = [d.strip() for d in draw_times.split(",")] if draw_times else None
     req = DateRangeRequest(
-        state=state.upper(), game_type=game_type.lower(),
-        start_date=start, end_date=end,
+        state=state.upper(),
+        game_type=game_type.lower(),
+        start_date=start,
+        end_date=end,
         filters=QueryFilters(
             draw_times=dt_list,
             include_verified_only=verified_only,
@@ -145,12 +236,12 @@ def draws_range(
     )
     resp = get_draws_for_date_range(req)
     return {
-        "state":         resp.request.state,
-        "game_type":     resp.request.game_type,
-        "start_date":    resp.request.start_date.isoformat(),
-        "end_date":      resp.request.end_date.isoformat(),
-        "total_count":   resp.total_count,
-        "draws":         [_draw_to_dict(d) for d in resp.draws],
+        "state": resp.request.state,
+        "game_type": resp.request.game_type,
+        "start_date": resp.request.start_date.isoformat(),
+        "end_date": resp.request.end_date.isoformat(),
+        "total_count": resp.total_count,
+        "draws": [_draw_to_dict(d) for d in resp.draws],
         "coverage_gaps": [_gap_to_dict(g) for g in resp.coverage_gaps],
     }
 
@@ -163,17 +254,18 @@ def latest_draws(state: str, game_type: str, n: int = 7):
 
 @app.get("/draws/window")
 def window_search(
-    state:        str,
-    game_type:    str,
-    anchor:       date,
-    lookahead:    int = 7,
-    lookbehind:   int = 0,
-    draw_times:   Optional[str] = None,
+    state: str,
+    game_type: str,
+    anchor: date,
+    lookahead: int = 7,
+    lookbehind: int = 0,
+    draw_times: Optional[str] = None,
     verified_only: bool = False,
 ):
     dt_list = [d.strip() for d in draw_times.split(",")] if draw_times else None
     req = WindowSearchRequest(
-        state=state.upper(), game_type=game_type.lower(),
+        state=state.upper(),
+        game_type=game_type.lower(),
         anchor_date=anchor,
         lookahead_days=lookahead,
         lookbehind_days=lookbehind,
@@ -181,10 +273,10 @@ def window_search(
     )
     resp = search_results_by_window(req)
     return {
-        "window_start":  resp.window_start.isoformat(),
-        "window_end":    resp.window_end.isoformat(),
-        "total_count":   resp.total_count,
-        "draws":         [_draw_to_dict(d) for d in resp.draws],
+        "window_start": resp.window_start.isoformat(),
+        "window_end": resp.window_end.isoformat(),
+        "total_count": resp.total_count,
+        "draws": [_draw_to_dict(d) for d in resp.draws],
         "coverage_gaps": [_gap_to_dict(g) for g in resp.coverage_gaps],
     }
 
@@ -199,24 +291,27 @@ def coverage_summary(state: str, game_type: Optional[str] = None):
 @app.post("/match")
 def match(body: MatchBody):
     req = CandidateMatchRequest(
-        state=body.state.upper(), game_type=body.game_type.lower(),
-        start_date=body.start_date, end_date=body.end_date,
+        state=body.state.upper(),
+        game_type=body.game_type.lower(),
+        start_date=body.start_date,
+        end_date=body.end_date,
         candidates=body.candidates,
         filters=body.filters.to_filters(),
     )
     resp = match_candidate_numbers(req)
     return {
-        "hit_count":               resp.hit_count,
-        "candidates_with_hits":    resp.candidates_with_hits,
+        "hit_count": resp.hit_count,
+        "candidates_with_hits": resp.candidates_with_hits,
         "candidates_without_hits": resp.candidates_without_hits,
-        "hits":                    [_hit_to_dict(h) for h in resp.hits],
+        "hits": [_hit_to_dict(h) for h in resp.hits],
     }
 
 
 @app.post("/backtest")
 def backtest(body: BacktestBody):
     req = DreamBacktestRequest(
-        state=body.state.upper(), game_type=body.game_type.lower(),
+        state=body.state.upper(),
+        game_type=body.game_type.lower(),
         anchor_date=body.anchor_date,
         lookahead_days=body.lookahead_days,
         candidates=body.candidates,
@@ -225,15 +320,15 @@ def backtest(body: BacktestBody):
     )
     resp = backtest_numbers(req)
     return {
-        "window_start":   resp.window_start.isoformat(),
-        "window_end":     resp.window_end.isoformat(),
-        "hit_count":      resp.hit_count,
-        "hit_dates":      resp.hit_dates,
+        "window_start": resp.window_start.isoformat(),
+        "window_end": resp.window_end.isoformat(),
+        "hit_count": resp.hit_count,
+        "hit_dates": resp.hit_dates,
         "hit_draw_times": resp.hit_draw_times,
-        "summary":        resp.summary,
-        "hits":           [_hit_to_dict(h) for h in resp.hits],
-        "all_draws":      [_draw_to_dict(d) for d in resp.all_draws],
-        "coverage_gaps":  [_gap_to_dict(g) for g in resp.coverage_gaps],
+        "summary": resp.summary,
+        "hits": [_hit_to_dict(h) for h in resp.hits],
+        "all_draws": [_draw_to_dict(d) for d in resp.all_draws],
+        "coverage_gaps": [_gap_to_dict(g) for g in resp.coverage_gaps],
     }
 
 
@@ -241,7 +336,8 @@ def backtest(body: BacktestBody):
 def backtest_batch(body: BatchBacktestBody):
     jobs = [
         DreamBacktestRequest(
-            state=j.state.upper(), game_type=j.game_type.lower(),
+            state=j.state.upper(),
+            game_type=j.game_type.lower(),
             anchor_date=j.anchor_date,
             lookahead_days=j.lookahead_days,
             candidates=j.candidates,
@@ -250,22 +346,22 @@ def backtest_batch(body: BatchBacktestBody):
         )
         for j in body.jobs
     ]
-    req  = BatchBacktestRequest(jobs=jobs)
+    req = BatchBacktestRequest(jobs=jobs)
     resp = batch_backtest(req)
     return {
-        "total_hits":           resp.total_hits,
+        "total_hits": resp.total_hits,
         "total_draws_searched": resp.total_draws_searched,
-        "jobs_with_hits":       resp.jobs_with_hits,
-        "aggregate_summary":    resp.aggregate_summary,
+        "jobs_with_hits": resp.jobs_with_hits,
+        "aggregate_summary": resp.aggregate_summary,
         "results": [
             {
-                "label":        r.request.label,
-                "anchor_date":  r.request.anchor_date.isoformat(),
+                "label": r.request.label,
+                "anchor_date": r.request.anchor_date.isoformat(),
                 "window_start": r.window_start.isoformat(),
-                "window_end":   r.window_end.isoformat(),
-                "hit_count":    r.hit_count,
-                "summary":      r.summary,
-                "hits":         [_hit_to_dict(h) for h in r.hits],
+                "window_end": r.window_end.isoformat(),
+                "hit_count": r.hit_count,
+                "summary": r.summary,
+                "hits": [_hit_to_dict(h) for h in r.hits],
             }
             for r in resp.results
         ],
@@ -276,12 +372,12 @@ def backtest_batch(body: BatchBacktestBody):
 def schedule(state: str, target_date: date):
     jobs = get_schedule_for_date(state.upper(), target_date)
     return {
-        "state":       state.upper(),
-        "date":        target_date.isoformat(),
+        "state": state.upper(),
+        "date": target_date.isoformat(),
         "scheduled_draws": [
             {
-                "game_type":  j.game_type,
-                "draw_time":  j.draw_time,
+                "game_type": j.game_type,
+                "draw_time": j.draw_time,
                 "draw_label": j.draw_label,
                 "active_start_date": j.active_start_date.isoformat() if j.active_start_date else None,
             }
@@ -296,38 +392,39 @@ def schedule(state: str, target_date: date):
 
 def _draw_to_dict(d) -> dict:
     return {
-        "canonical_key":          d.canonical_key,
-        "state":                  d.state,
-        "game_type":              d.game_type,
-        "draw_date":              d.draw_date,
-        "draw_time":              d.draw_time,
-        "winning_number":         d.winning_number,
-        "digit_count":            d.digit_count,
-        "sorted_digits":          d.sorted_digits,
-        "is_verified":            d.is_verified,
-        "has_conflict":           d.has_conflict,
-        "source_name":            d.source_name,
-        "accepted_from_source":   d.accepted_from_source,
+        "canonical_key": d.canonical_key,
+        "state": d.state,
+        "game_type": d.game_type,
+        "draw_date": d.draw_date,
+        "draw_time": d.draw_time,
+        "winning_number": d.winning_number,
+        "digit_count": d.digit_count,
+        "sorted_digits": d.sorted_digits,
+        "is_verified": d.is_verified,
+        "has_conflict": d.has_conflict,
+        "source_name": d.source_name,
+        "accepted_from_source": d.accepted_from_source,
     }
 
 
 def _hit_to_dict(h) -> dict:
     return {
-        "candidate":      h.candidate,
-        "draw_date":      h.draw_date,
-        "draw_time":      h.draw_time,
+        "candidate": h.candidate,
+        "draw_date": h.draw_date,
+        "draw_time": h.draw_time,
         "winning_number": h.winning_number,
-        "match_type":     h.match_type,
-        "is_verified":    h.is_verified,
-        "source_name":    h.source_name,
-        "canonical_key":  h.canonical_key,
+        "match_type": h.match_type,
+        "is_verified": h.is_verified,
+        "source_name": h.source_name,
+        "canonical_key": h.canonical_key,
     }
 
 
 def _gap_to_dict(g) -> dict:
     return {
-        "draw_date":        g.draw_date,
-        "draw_time":        g.draw_time,
-        "coverage_status":  g.coverage_status,
-        "last_attempted":   g.last_attempted_at,
+        "draw_date": g.draw_date,
+        "draw_time": g.draw_time,
+        "coverage_status": g.coverage_status,
+        "last_attempted": g.last_attempted_at,
     }
+    
