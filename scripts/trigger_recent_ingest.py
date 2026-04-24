@@ -8,9 +8,9 @@ import urllib.request
 
 
 def main() -> int:
-    base = os.environ["LOTTERY_ENGINE_URL"].rstrip("/")
-    token = os.environ["INGEST_ADMIN_TOKEN"]
-    days_back = int(os.environ.get("INGEST_DAYS_BACK", "3"))
+    base = os.environ["LOTTERY_ENGINE_URL"].strip().rstrip("/")
+    token = os.environ["INGEST_ADMIN_TOKEN"].strip()
+    days_back = int(os.environ.get("INGEST_DAYS_BACK", "3").strip())
 
     payload = {"days_back": days_back}
     req = urllib.request.Request(
