@@ -166,6 +166,12 @@ class BacktestBody(BaseModel):
     candidates: list[str] = Field(default_factory=list)
     filters: FilterParams = Field(default_factory=FilterParams)
     label: str = ""
+    # Optional top-level alias for match mode.
+    # When provided, this overrides filters.match_mode.
+    # Accepts the same values as filters.match_mode:
+    #   "exact" | "straight" | "box" | "both" | "digit" | "pair" | "triple"
+    # When absent (None), filters.match_mode is used unchanged.
+    match_mode: Optional[str] = None
 
 
 class BatchBacktestBody(BaseModel):
@@ -309,13 +315,20 @@ def match(body: MatchBody):
 
 @app.post("/backtest")
 def backtest(body: BacktestBody):
+    # Resolve effective match mode.
+    # Top-level body.match_mode overrides filters.match_mode when explicitly provided.
+    # If body.match_mode is None (absent from request), filters.match_mode is used as-is.
+    filters = body.filters.to_filters()
+    if body.match_mode is not None:
+        filters.match_mode = body.match_mode
+
     req = DreamBacktestRequest(
         state=body.state.upper(),
         game_type=body.game_type.lower(),
         anchor_date=body.anchor_date,
         lookahead_days=body.lookahead_days,
         candidates=body.candidates,
-        filters=body.filters.to_filters(),
+        filters=filters,
         label=body.label,
     )
     resp = backtest_numbers(req)
@@ -326,26 +339,35 @@ def backtest(body: BacktestBody):
         "hit_dates": resp.hit_dates,
         "hit_draw_times": resp.hit_draw_times,
         "summary": resp.summary,
+        "match_mode": resp.match_mode,
+        "draws_searched": resp.draws_searched,
+        "coverage_complete": resp.coverage_complete,
         "hits": [_hit_to_dict(h) for h in resp.hits],
         "all_draws": [_draw_to_dict(d) for d in resp.all_draws],
         "coverage_gaps": [_gap_to_dict(g) for g in resp.coverage_gaps],
+        "candidate_results": [_candidate_result_to_dict(cr) for cr in resp.candidate_results],
     }
 
 
 @app.post("/backtest/batch")
 def backtest_batch(body: BatchBacktestBody):
-    jobs = [
-        DreamBacktestRequest(
-            state=j.state.upper(),
-            game_type=j.game_type.lower(),
-            anchor_date=j.anchor_date,
-            lookahead_days=j.lookahead_days,
-            candidates=j.candidates,
-            filters=j.filters.to_filters(),
-            label=j.label,
+    jobs = []
+    for j in body.jobs:
+        # Apply same top-level match_mode override logic per job.
+        filters = j.filters.to_filters()
+        if j.match_mode is not None:
+            filters.match_mode = j.match_mode
+        jobs.append(
+            DreamBacktestRequest(
+                state=j.state.upper(),
+                game_type=j.game_type.lower(),
+                anchor_date=j.anchor_date,
+                lookahead_days=j.lookahead_days,
+                candidates=j.candidates,
+                filters=filters,
+                label=j.label,
+            )
         )
-        for j in body.jobs
-    ]
     req = BatchBacktestRequest(jobs=jobs)
     resp = batch_backtest(req)
     return {
@@ -360,6 +382,8 @@ def backtest_batch(body: BatchBacktestBody):
                 "window_start": r.window_start.isoformat(),
                 "window_end": r.window_end.isoformat(),
                 "hit_count": r.hit_count,
+                "match_mode": r.match_mode,
+                "draws_searched": r.draws_searched,
                 "summary": r.summary,
                 "hits": [_hit_to_dict(h) for h in r.hits],
             }
@@ -426,5 +450,17 @@ def _gap_to_dict(g) -> dict:
         "draw_time": g.draw_time,
         "coverage_status": g.coverage_status,
         "last_attempted": g.last_attempted_at,
+    }
+
+
+def _candidate_result_to_dict(cr) -> dict:
+    return {
+        "candidate": cr.candidate,
+        "candidate_sorted": cr.candidate_sorted,
+        "status": cr.status,
+        "hit_count": cr.hit_count,
+        "coverage_complete": cr.coverage_complete,
+        "miss_reason": cr.miss_reason,
+        "hits": [_hit_to_dict(h) for h in cr.hits],
     }
     

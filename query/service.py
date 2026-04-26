@@ -28,6 +28,9 @@ from query.coverage_checker import get_coverage_gaps
 
 logger = logging.getLogger(__name__)
 
+# Sentinel used to bypass per-state filtering.
+_ALL_STATES = "ALL"
+
 
 # ------------------------------------------------------------------
 # get_draws_for_date_range
@@ -147,12 +150,19 @@ def backtest_numbers(req: DreamBacktestRequest) -> DreamBacktestResponse:
     Supports match_mode values in req.filters.match_mode:
       "exact" / "straight" — digit-for-digit match (same position)
       "box"                 — any permutation of the candidate's digits
+      "both"                — exact OR box (any permutation or straight hit)
       "digit"               — every digit in candidate appears in winning
       "pair"                — any consecutive 2-digit pair matches
+
+    When state="ALL", draws are fetched across all states for the
+    requested game_type. Coverage gap reporting is skipped for ALL-state
+    runs (coverage_complete=False, gaps=[]) because per-state gap
+    checking is not meaningful across all states simultaneously.
     """
     window_start = req.anchor_date
     window_end   = req.anchor_date + timedelta(days=req.lookahead_days)
     match_mode   = req.filters.match_mode
+    is_all_states = req.state.upper() == _ALL_STATES
 
     with get_connection() as conn:
         draws = _fetch_draws(
@@ -163,13 +173,19 @@ def backtest_numbers(req: DreamBacktestRequest) -> DreamBacktestResponse:
             end_date=window_end.isoformat(),
             filters=req.filters,
         )
-        gaps = get_coverage_gaps(
-            conn, req.state, req.game_type,
-            window_start, window_end,
-            req.filters.draw_times,
-        )
-
-    coverage_complete = len(gaps) == 0
+        # Coverage gap checking is not meaningful for ALL-state runs.
+        # Return empty gaps and mark coverage as incomplete to signal
+        # that gap status was not assessed rather than verified clean.
+        if is_all_states:
+            gaps = []
+            coverage_complete = False
+        else:
+            gaps = get_coverage_gaps(
+                conn, req.state, req.game_type,
+                window_start, window_end,
+                req.filters.draw_times,
+            )
+            coverage_complete = len(gaps) == 0
 
     hit_pairs = filter_draws_by_candidates(draws, req.candidates, match_mode)
     hits = [
@@ -232,9 +248,10 @@ def batch_backtest(req: BatchBacktestRequest) -> BatchBacktestResponse:
     # Group jobs by (state, game_type) to pre-fetch date ranges in bulk
     with get_connection() as conn:
         for job in req.jobs:
-            window_start = job.anchor_date
-            window_end   = job.anchor_date + timedelta(days=job.lookahead_days)
-            match_mode   = job.filters.match_mode
+            window_start  = job.anchor_date
+            window_end    = job.anchor_date + timedelta(days=job.lookahead_days)
+            match_mode    = job.filters.match_mode
+            is_all_states = job.state.upper() == _ALL_STATES
 
             draws = _fetch_draws(
                 conn,
@@ -244,13 +261,17 @@ def batch_backtest(req: BatchBacktestRequest) -> BatchBacktestResponse:
                 end_date=window_end.isoformat(),
                 filters=job.filters,
             )
-            gaps = get_coverage_gaps(
-                conn, job.state, job.game_type,
-                window_start, window_end,
-                job.filters.draw_times,
-            )
 
-            coverage_complete = len(gaps) == 0
+            if is_all_states:
+                gaps = []
+                coverage_complete = False
+            else:
+                gaps = get_coverage_gaps(
+                    conn, job.state, job.game_type,
+                    window_start, window_end,
+                    job.filters.draw_times,
+                )
+                coverage_complete = len(gaps) == 0
 
             hit_pairs = filter_draws_by_candidates(draws, job.candidates, match_mode)
             hits = [
@@ -369,17 +390,37 @@ def _build_query(
     game_type: str,
     filters: Optional[QueryFilters] = None,
 ) -> tuple[str, list]:
-    """Build the base SELECT with filter clauses."""
-    filters = filters or QueryFilters()
-    sql = """
-        SELECT canonical_key, state, game_type, draw_date, draw_time,
-               winning_number, digit_count, sorted_digits,
-               is_verified, has_conflict,
-               accepted_from_source, accepted_source_priority
-        FROM draws
-        WHERE state=? AND game_type=?
     """
-    params: list = [state.upper(), game_type.lower()]
+    Build the base SELECT with filter clauses.
+
+    When state.upper() == "ALL", the state filter is omitted entirely,
+    allowing the query to return draws across all states for the
+    requested game_type. All other state values behave exactly as before.
+    """
+    filters = filters or QueryFilters()
+
+    if state.upper() == _ALL_STATES:
+        # ALL-state path: filter by game_type only, no state restriction.
+        sql = """
+            SELECT canonical_key, state, game_type, draw_date, draw_time,
+                   winning_number, digit_count, sorted_digits,
+                   is_verified, has_conflict,
+                   accepted_from_source, accepted_source_priority
+            FROM draws
+            WHERE game_type=?
+        """
+        params: list = [game_type.lower()]
+    else:
+        # Normal single-state path: unchanged from original.
+        sql = """
+            SELECT canonical_key, state, game_type, draw_date, draw_time,
+                   winning_number, digit_count, sorted_digits,
+                   is_verified, has_conflict,
+                   accepted_from_source, accepted_source_priority
+            FROM draws
+            WHERE state=? AND game_type=?
+        """
+        params: list = [state.upper(), game_type.lower()]
 
     if filters.draw_times:
         placeholders = ",".join("?" * len(filters.draw_times))
@@ -443,8 +484,8 @@ def _build_candidate_results(
       "no_match" — no draw matched
 
     miss_reason (when status == "no_match"):
-      "no_draw_matched"  — draws were searched, none matched
-      "window_has_gaps"  — window has coverage gaps, result is inconclusive
+      "no_draw_matched"    — draws were searched, none matched
+      "window_has_gaps"    — window has coverage gaps, result is inconclusive
       "no_draws_in_window" — window returned 0 draws (nothing to search)
     """
     # Build a lookup: candidate -> list of hits

@@ -19,6 +19,7 @@ from registry.enums import DrawTime
 EXACT    = "exact"
 STRAIGHT = "straight"   # alias for exact — same match, clearer name for dream apps
 BOX      = "box"
+BOTH     = "both"       # exact OR box — any permutation or straight match
 DIGIT    = "digit"
 PAIR     = "pair"
 TRIPLE   = "triple"
@@ -40,6 +41,14 @@ def _box(candidate: str, winning: str) -> bool:
     '123' box-matches '321', '213', '132', etc.
     """
     return len(candidate) == len(winning) and sorted(candidate) == sorted(winning)
+
+
+def _both(candidate: str, winning: str) -> bool:
+    """
+    Both match: returns True if either exact OR box matches.
+    Covers straight hits and all permutation hits in a single pass.
+    """
+    return _exact(candidate, winning) or _box(candidate, winning)
 
 
 def _digit_presence(candidate: str, winning: str) -> bool:
@@ -96,6 +105,7 @@ _MATCH_ENGINES: dict[str, Callable[[str, str], bool]] = {
     EXACT:    _exact,
     STRAIGHT: _exact,     # alias — "straight" is the lottery world's term for exact-order match
     BOX:      _box,
+    BOTH:     _both,      # exact OR box — added in patch
     DIGIT:    _digit_presence,
     PAIR:     _pair,
     TRIPLE:   _triple,
@@ -141,3 +151,4 @@ def register_match_engine(mode: str, fn: Callable[[str, str], bool]) -> None:
 
 def available_modes() -> list[str]:
     return list(_MATCH_ENGINES.keys())
+    
