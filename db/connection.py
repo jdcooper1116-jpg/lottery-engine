@@ -2,16 +2,35 @@
 lottery_engine/db/connection.py
 SQLite connection factory with WAL mode and row factory.
 """
+import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
 
 def get_db_path() -> str:
-    import os
-    default = str(Path(__file__).parent.parent / "lottery.db")
-    return os.environ.get("LOTTERY_DB_PATH", default)
+    """
+    Resolve the SQLite database path.
 
+    Priority:
+    1. LOTTERY_DB_PATH env var
+    2. Railway volume database at /data/history_all_states.db
+    3. Local canonical database at data/history_all_states.db
+    4. Legacy fallback lottery.db
+    """
+    env_path = os.environ.get("LOTTERY_DB_PATH")
+    if env_path:
+        return env_path
+
+    railway_path = Path("/data/history_all_states.db")
+    if railway_path.exists():
+        return str(railway_path)
+
+    local_canonical = Path(__file__).parent.parent / "data" / "history_all_states.db"
+    if local_canonical.exists():
+        return str(local_canonical)
+
+    return str(Path(__file__).parent.parent / "lottery.db")
 
 @contextmanager
 def get_connection(db_path: str | None = None):
