@@ -8,6 +8,12 @@ Main ingest loop. Ties together:
   coverage   -> upsert scrape_coverage
   reconciler -> promote observations to canonical draws
 
+Two-phase pipeline:
+  Phase 1: fetch all tasks → collect (task, results) pairs
+  Phase 2: cross-task sanity check — detect same-URL draw_time duplication
+           (a daily-aggregate source spread across multiple draw_time slots)
+  Phase 3: write clean results; mark ambiguous/empty tasks as scrape_error
+
 Usage (programmatic):
     from orchestrator.runner import run_ingest
     run_ingest(state="GA", start_date=date(2024,1,1), end_date=date(2024,3,31))
@@ -17,6 +23,7 @@ Usage (CLI):
 """
 from __future__ import annotations
 import logging
+from collections import defaultdict
 from datetime import date
 from typing import Optional
 
@@ -44,7 +51,8 @@ def run_ingest(
     Full ingest pass for a date range.
 
     Returns a summary dict:
-      tasks_run, raw_results, observations_written, reconcile_stats
+      tasks_run, raw_results, observations_written, ambiguous_discarded,
+      reconcile_stats
     """
     tasks = build_tasks(
         start_date=start_date,
@@ -59,24 +67,67 @@ def run_ingest(
         len(tasks), state or "all states", start_date, end_date,
     )
 
-    total_raw     = 0
-    total_written = 0
+    total_raw          = 0
+    total_written      = 0
+    ambiguous_discarded = 0
 
-    for task in tasks:
-        if dry_run:
+    if dry_run:
+        for task in tasks:
             _print_dry_run_task(task)
-            total_raw += 1   # count task, not rows
-            continue
+            total_raw += 1
+    else:
+        # ------------------------------------------------------------------
+        # Phase 1: fetch all tasks
+        # ------------------------------------------------------------------
+        task_results: list[tuple[FetchTask, list[RawDrawResult]]] = []
+        for task in tasks:
+            raw = _run_task(task)
+            task_results.append((task, raw))
+            total_raw += len(raw)
 
-        raw_results = _run_task(task)
-        total_raw += len(raw_results)
+        # ------------------------------------------------------------------
+        # Phase 2: cross-task duplication check
+        # Detect when the same (state, game_type, date, number, source_url)
+        # appears across 2+ draw_times — sign that a daily-aggregate page was
+        # spread across specific draw_time slots without explicit labeling.
+        # ------------------------------------------------------------------
+        all_results = [r for _, res in task_results for r in res]
+        ambiguous_url_keys = _find_ambiguous_url_draw_time_keys(all_results)
 
-        if raw_results:
-            written = _write_observations(raw_results, task)
-            total_written += written
-        else:
-            # Record that we attempted but got nothing
-            _mark_empty_task(task)
+        if ambiguous_url_keys:
+            ambiguous_discarded = sum(
+                1 for r in all_results
+                if _url_draw_key(r) in ambiguous_url_keys
+            )
+            bad_sources = {k[4] for k in ambiguous_url_keys}
+            logger.warning(
+                "Ambiguous draw_time duplication: same winning_number from %s "
+                "appears across multiple draw_time slots from the same URL. "
+                "Discarding %d results.",
+                bad_sources, ambiguous_discarded,
+            )
+
+        # ------------------------------------------------------------------
+        # Phase 3: write clean results; mark ambiguous/empty tasks
+        # ------------------------------------------------------------------
+        for task, raw_results in task_results:
+            clean = [
+                r for r in raw_results
+                if _url_draw_key(r) not in ambiguous_url_keys
+            ]
+            had_ambiguous = len(clean) < len(raw_results)
+
+            if clean:
+                written = _write_observations(clean, task)
+                total_written += written
+            else:
+                notes = (
+                    "ambiguous_draw_time: daily-aggregate source result duplicated "
+                    "across draw_time slots from same URL"
+                    if had_ambiguous
+                    else "Fetch returned 0 results"
+                )
+                _mark_empty_task(task, notes=notes)
 
     reconcile_stats: dict = {}
     if reconcile and not dry_run:
@@ -85,14 +136,45 @@ def run_ingest(
             reconcile_stats = reconcile_pending(conn, state=state)
 
     summary = {
-        "tasks_run":            len(tasks),
-        "raw_results":          total_raw,
-        "observations_written": total_written,
-        "reconcile_stats":      reconcile_stats,
+        "tasks_run":             len(tasks),
+        "raw_results":           total_raw,
+        "observations_written":  total_written,
+        "ambiguous_discarded":   ambiguous_discarded,
+        "reconcile_stats":       reconcile_stats,
     }
     logger.info("Ingest complete: %s", summary)
     return summary
 
+
+# ---------------------------------------------------------------------------
+# Ambiguous draw_time detection
+# ---------------------------------------------------------------------------
+
+def _url_draw_key(r: RawDrawResult) -> tuple:
+    """Key that groups results from the same source URL on the same date."""
+    return (r.state, r.game_type, r.draw_date, r.winning_number, r.source_url)
+
+
+def _find_ambiguous_url_draw_time_keys(
+    results: list[RawDrawResult],
+) -> set[tuple]:
+    """
+    Return the set of _url_draw_key values where the same (state, game_type,
+    draw_date, winning_number, source_url) appears for 2+ distinct draw_times.
+
+    This catches daily-aggregate sources (e.g. lotteryusa.com GA) that return
+    one result per day but get fetched once per draw_time mapping, causing the
+    same number to be recorded as midday, evening, AND night.
+    """
+    groups: dict[tuple, set[str]] = defaultdict(set)
+    for r in results:
+        groups[_url_draw_key(r)].add(r.draw_time)
+    return {key for key, draw_times in groups.items() if len(draw_times) >= 2}
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
 
 def _run_task(task: FetchTask) -> list[RawDrawResult]:
     """Run one FetchTask through its parser."""
@@ -142,11 +224,9 @@ def _write_observations(results: list[RawDrawResult], task: FetchTask) -> int:
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """
 
-    # Write in a single transaction per task for speed
     with get_connection() as conn:
         written = execute_batch(conn, sql, rows)
 
-        # Mark coverage: accepted for each distinct (date, draw_time) seen
         seen: set[tuple] = set()
         for r in results:
             slot = (r.state, r.game_type, r.draw_date, r.draw_time)
@@ -165,18 +245,16 @@ def _write_observations(results: list[RawDrawResult], task: FetchTask) -> int:
     return written
 
 
-def _mark_empty_task(task: FetchTask) -> None:
+def _mark_empty_task(task: FetchTask, notes: str = "Fetch returned 0 results") -> None:
     """
-    When a fetch returns zero results, mark coverage slots as scrape_error
-    so the system knows the attempt was made.
+    Mark coverage slots as scrape_error so the system records that an attempt
+    was made but produced no usable data.
     """
     j = task.mapping.job_def
     from sources.base import date_range_months
-    from datetime import date as date_type
 
     with get_connection() as conn:
         for year, month in date_range_months(task.start_date, task.end_date):
-            # Only mark the first of each month to avoid flooding the table
             slot_date = f"{year}-{month:02d}-01"
             update_coverage(
                 conn,
@@ -184,14 +262,11 @@ def _mark_empty_task(task: FetchTask) -> None:
                 draw_date=slot_date, draw_time=j.draw_time,
                 status=CoverageStatus.SCRAPE_ERROR,
                 source_name=task.mapping.source_name,
-                notes="Fetch returned 0 results",
+                notes=notes,
             )
 
+
 def _print_dry_run_task(task: FetchTask) -> None:
-    """
-    Print the task details and all URLs it would generate — no HTTP requests made.
-    Iterates the same (year, month) loop the real fetcher uses so URLs are exact.
-    """
     from sources.base import date_range_months
     j = task.mapping.job_def
     print(f"  TASK  {j.state} | {j.game_type} | {j.draw_time} | {task.mapping.source_name}")
