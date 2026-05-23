@@ -325,4 +325,28 @@ SOURCE_MAPPINGS: list[SourceJobMapping] = [
         url_template="https://lotteryusa.com/georgia/cash-4/",
         source_min_year=2018,
     ),
+
+    # ---- lotteryusa.com — night draws (added E2B fix; previously missing) ----
+    SourceJobMapping(
+        job_def=_GA_PICK3_NIGHT,
+        source_name=SourceName.LOTTERYUSA,
+        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERYUSA],
+        source_state_slug="georgia",
+        source_game_slug="cash-3",
+        source_draw_time_label="Night",
+        url_template="https://lotteryusa.com/georgia/cash-3/",
+        source_min_year=2018,
+        notes="Night draw fallback via lotteryusa.com.",
+    ),
+    SourceJobMapping(
+        job_def=_GA_PICK4_NIGHT,
+        source_name=SourceName.LOTTERYUSA,
+        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERYUSA],
+        source_state_slug="georgia",
+        source_game_slug="cash-4",
+        source_draw_time_label="Night",
+        url_template="https://lotteryusa.com/georgia/cash-4/",
+        source_min_year=2018,
+        notes="Night draw fallback via lotteryusa.com.",
+    ),
 ]

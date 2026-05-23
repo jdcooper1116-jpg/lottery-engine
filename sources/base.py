@@ -27,8 +27,10 @@ DEFAULT_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xhtml+xml",
     "Accept-Language": "en-US,en;q=0.9",
 }
-REQUEST_TIMEOUT = 30
+REQUEST_TIMEOUT = 60      # increased from 30 — prevents premature timeout on slow sources
 RATE_LIMIT_DELAY = 1.5   # seconds between requests to same host
+RETRY_ATTEMPTS   = 3     # retry count for timeout/connection errors
+RETRY_BACKOFF    = 2.0   # seconds; doubles each attempt
 
 
 @dataclass
@@ -104,6 +106,8 @@ class SourceParser(ABC):
         self.session: Session = requests.Session()
         self.session.headers.update(DEFAULT_HEADERS)
         self._last_request_time: float = 0.0
+        self.timeout_count:      int   = 0    # incremented on each timeout
+        self.error_count:        int   = 0    # incremented on non-timeout errors
 
     def _rate_limit(self) -> None:
         elapsed = time.time() - self._last_request_time
@@ -112,15 +116,37 @@ class SourceParser(ABC):
         self._last_request_time = time.time()
 
     def _get(self, url: str) -> requests.Response | None:
-        """Fetch a URL with rate limiting and error handling."""
+        """Fetch a URL with rate limiting, retry, and error tracking."""
         self._rate_limit()
-        try:
-            resp = self.session.get(url, timeout=REQUEST_TIMEOUT)
-            resp.raise_for_status()
-            return resp
-        except requests.RequestException as e:
-            logger.warning("Fetch failed for %s: %s", url, e)
-            return None
+        delay = RETRY_BACKOFF
+        for attempt in range(1, RETRY_ATTEMPTS + 1):
+            try:
+                resp = self.session.get(url, timeout=REQUEST_TIMEOUT)
+                resp.raise_for_status()
+                return resp
+            except (requests.Timeout, requests.ConnectionError) as e:
+                self.timeout_count += 1
+                logger.warning(
+                    "Fetch timeout/connection error for %s (attempt %d/%d): %s",
+                    url, attempt, RETRY_ATTEMPTS, e,
+                )
+                if attempt < RETRY_ATTEMPTS:
+                    logger.info("Retrying in %.1fs...", delay)
+                    time.sleep(delay)
+                    delay *= 2
+                else:
+                    logger.error("All %d attempts failed for %s", RETRY_ATTEMPTS, url)
+                    return None
+            except requests.HTTPError as e:
+                # Don't retry fatal HTTP errors (4xx) — only transient failures
+                self.error_count += 1
+                logger.warning("HTTP error for %s: %s", url, e)
+                return None
+            except requests.RequestException as e:
+                self.error_count += 1
+                logger.warning("Fetch failed for %s: %s", url, e)
+                return None
+        return None
 
     def fetch_results(
         self,

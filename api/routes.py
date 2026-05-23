@@ -74,19 +74,20 @@ def admin_ingest_recent(
     _require_ingest_token(x_ingest_token)
 
     days_back = 3
-    if isinstance(payload, dict) and "days_back" in payload:
-        days_back = int(payload["days_back"])
+    source    = ""
+    if isinstance(payload, dict):
+        if "days_back" in payload:
+            days_back = int(payload["days_back"])
+        if "source" in payload:
+            source = str(payload["source"]).strip()
 
     script_path = Path("scripts/ingest_recent_all_states.py")
     if not script_path.exists():
         raise HTTPException(status_code=500, detail=f"Missing script: {script_path}")
 
-    cmd = [
-        sys.executable,
-        str(script_path),
-        "--days-back",
-        str(days_back),
-    ]
+    cmd = [sys.executable, str(script_path), "--days-back", str(days_back)]
+    if source:
+        cmd += ["--source", source]
 
     proc = subprocess.run(cmd, capture_output=True, text=True)
 
@@ -98,22 +99,65 @@ def admin_ingest_recent(
         except Exception:
             status = {"warning": f"Could not parse {status_path}"}
 
+    # Surface aggregated metrics from the status file
+    raw_total  = status.get("raw_results_total", 0)
+    obs_total  = status.get("observations_written_total", 0)
+    zero_states = status.get("states_with_zero_rows", [])
+    timeout_ct  = status.get("fetch_timeout_count", 0)
+    error_ct    = status.get("fetch_error_count", 0)
+
     if proc.returncode != 0:
         raise HTTPException(
-            status_code=500,
+            status_code=502 if raw_total == 0 or obs_total == 0 else 500,
             detail={
-                "message": "Recent ingest failed",
-                "stdout_tail": proc.stdout[-1500:],
-                "stderr_tail": proc.stderr[-1500:],
-                "status": status,
+                "message":                   "Recent ingest failed",
+                "raw_results_total":         raw_total,
+                "observations_written_total":obs_total,
+                "states_with_zero_rows":     zero_states,
+                "fetch_timeout_count":       timeout_ct,
+                "fetch_error_count":         error_ct,
+                "stdout_tail":               proc.stdout[-1500:],
+                "stderr_tail":               proc.stderr[-1500:],
+                "status":                    status,
+            },
+        )
+
+    # Do not report clean success when raw_results or observations are zero.
+    # This applies even when a JSON payload like {"days_back": 7} is sent.
+    if raw_total == 0:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message":               "Ingest completed but fetched ZERO raw results",
+                "raw_results_total":     raw_total,
+                "observations_written_total": obs_total,
+                "states_with_zero_rows": zero_states,
+                "stdout_tail":           proc.stdout[-1500:],
+            },
+        )
+
+    if obs_total == 0:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message":               "Ingest completed but wrote ZERO observations",
+                "raw_results_total":     raw_total,
+                "observations_written_total": obs_total,
+                "states_with_zero_rows": zero_states,
+                "stdout_tail":           proc.stdout[-1500:],
             },
         )
 
     return {
-        "ok": True,
-        "message": "Recent ingest completed",
-        "status": status,
-        "stdout_tail": proc.stdout[-1500:],
+        "ok":                        True,
+        "message":                   "Recent ingest completed",
+        "raw_results_total":         raw_total,
+        "observations_written_total":obs_total,
+        "states_with_zero_rows":     zero_states,
+        "fetch_timeout_count":       timeout_ct,
+        "fetch_error_count":         error_ct,
+        "status":                    status,
+        "stdout_tail":               proc.stdout[-1500:],
     }
 
 
@@ -133,6 +177,92 @@ def admin_ingest_status(
         raise HTTPException(status_code=500, detail=f"Could not read status file: {e}")
 
     return {"ok": True, "status": status}
+
+
+class TargetedIngestBody(BaseModel):
+    state:      str
+    game_type:  str
+    start_date: date
+    end_date:   date
+    source:     Optional[str] = None      # None / blank = all sources
+    reconcile:  bool          = True      # run reconciliation after ingest
+
+
+@app.post("/admin/ingest/targeted")
+def admin_ingest_targeted(
+    body: TargetedIngestBody,
+    x_ingest_token: str | None = Header(default=None, alias="X-Ingest-Token"),
+):
+    """
+    Targeted ingest for a specific state/game/date range.
+
+    Always surfaces raw_results and observations_written.
+    Returns HTTP 502 when raw_results == 0 or observations_written == 0,
+    preventing silent empty-ingest success.
+
+    Body:
+        state       e.g. "GA"
+        game_type   "pick3" | "pick4"
+        start_date  YYYY-MM-DD
+        end_date    YYYY-MM-DD
+        source      optional — blank / omit for all sources
+        reconcile   default true
+    """
+    _require_ingest_token(x_ingest_token)
+
+    from db.connection import initialize_db
+    from orchestrator.runner import run_ingest
+
+    try:
+        initialize_db()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DB init failed: {e}")
+
+    source = (body.source or "").strip() or None
+
+    try:
+        summary = run_ingest(
+            start_date=body.start_date,
+            end_date=body.end_date,
+            state=body.state.upper(),
+            game_type=body.game_type.lower(),
+            source_name=source,
+            reconcile=body.reconcile,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ingest error: {e}")
+
+    raw_results          = summary.get("raw_results", 0)
+    observations_written = summary.get("observations_written", 0)
+    tasks_run            = summary.get("tasks_run", 0)
+    reconcile_stats      = summary.get("reconcile_stats", {})
+
+    result = {
+        "ok":                   True,
+        "state":                body.state.upper(),
+        "game_type":            body.game_type.lower(),
+        "start_date":           body.start_date.isoformat(),
+        "end_date":             body.end_date.isoformat(),
+        "source":               source or "(all sources)",
+        "tasks_run":            tasks_run,
+        "raw_results":          raw_results,
+        "observations_written": observations_written,
+        "reconcile_stats":      reconcile_stats,
+    }
+
+    # Fail with 502 when no data was fetched — expose the problem, do not silently succeed
+    if raw_results == 0:
+        raise HTTPException(
+            status_code=502,
+            detail={**result, "message": "Targeted ingest completed but raw_results == 0"},
+        )
+    if observations_written == 0:
+        raise HTTPException(
+            status_code=502,
+            detail={**result, "message": "Rows fetched but observations_written == 0"},
+        )
+
+    return result
 
 
 # ------------------------------------------------------------------
