@@ -283,70 +283,10 @@ SOURCE_MAPPINGS: list[SourceJobMapping] = [
         source_min_year=2012,
     ),
 
-    # ---- lotteryusa.com (priority 3, recent only) ----
-    SourceJobMapping(
-        job_def=_GA_PICK3_MIDDAY,
-        source_name=SourceName.LOTTERYUSA,
-        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERYUSA],
-        source_state_slug="georgia",
-        source_game_slug="cash-3",
-        source_draw_time_label="Midday",
-        url_template="https://lotteryusa.com/georgia/cash-3/",
-        source_min_year=2018,
-        notes="Near-current supplement only. Use for gap-fill of recent dates.",
-    ),
-    SourceJobMapping(
-        job_def=_GA_PICK3_EVENING,
-        source_name=SourceName.LOTTERYUSA,
-        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERYUSA],
-        source_state_slug="georgia",
-        source_game_slug="cash-3",
-        source_draw_time_label="Evening",
-        url_template="https://lotteryusa.com/georgia/cash-3/",
-        source_min_year=2018,
-    ),
-    SourceJobMapping(
-        job_def=_GA_PICK4_MIDDAY,
-        source_name=SourceName.LOTTERYUSA,
-        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERYUSA],
-        source_state_slug="georgia",
-        source_game_slug="cash-4",
-        source_draw_time_label="Midday",
-        url_template="https://lotteryusa.com/georgia/cash-4/",
-        source_min_year=2018,
-    ),
-    SourceJobMapping(
-        job_def=_GA_PICK4_EVENING,
-        source_name=SourceName.LOTTERYUSA,
-        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERYUSA],
-        source_state_slug="georgia",
-        source_game_slug="cash-4",
-        source_draw_time_label="Evening",
-        url_template="https://lotteryusa.com/georgia/cash-4/",
-        source_min_year=2018,
-    ),
-
-    # ---- lotteryusa.com — night draws (added E2B fix; previously missing) ----
-    SourceJobMapping(
-        job_def=_GA_PICK3_NIGHT,
-        source_name=SourceName.LOTTERYUSA,
-        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERYUSA],
-        source_state_slug="georgia",
-        source_game_slug="cash-3",
-        source_draw_time_label="Night",
-        url_template="https://lotteryusa.com/georgia/cash-3/",
-        source_min_year=2018,
-        notes="Night draw fallback via lotteryusa.com.",
-    ),
-    SourceJobMapping(
-        job_def=_GA_PICK4_NIGHT,
-        source_name=SourceName.LOTTERYUSA,
-        source_priority=SOURCE_PRIORITIES[SourceName.LOTTERYUSA],
-        source_state_slug="georgia",
-        source_game_slug="cash-4",
-        source_draw_time_label="Night",
-        url_template="https://lotteryusa.com/georgia/cash-4/",
-        source_min_year=2018,
-        notes="Night draw fallback via lotteryusa.com.",
-    ),
+    # lotteryusa.com is intentionally excluded for GA.
+    # GA runs 3 draws/day (midday, evening, night) but lotteryusa.com serves a
+    # single unlabeled daily aggregate — no draw_time label appears on the page.
+    # Mapping it to specific draw_time slots would duplicate the same result
+    # across all three slots, corrupting backtest hit counts.
+    # Fallback for GA is lotterycorner.com (priority 2, per-draw-time pages).
 ]

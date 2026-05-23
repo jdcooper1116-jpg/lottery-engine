@@ -157,7 +157,9 @@ class LotteryUSAParser(SourceParser):
                         continue
 
                     raw_time = cells[time_idx].get_text(strip=True) if time_idx and time_idx < len(cells) else ""
-                    canonical_time = normalize_draw_time(raw_time) if raw_time else mapping.job_def.draw_time
+                    # Use "unknown" when the page carries no draw_time label.
+                    # Callers that need a specific draw_time will filter these out.
+                    canonical_time = normalize_draw_time(raw_time) if raw_time else "unknown"
 
                     num_col = number_idx if number_idx is not None else _find_number_cell(cells, mapping.job_def.game_type)
                     if num_col is None or num_col >= len(cells):
@@ -219,7 +221,7 @@ class LotteryUSAParser(SourceParser):
                     continue
 
                 raw_time = time_el.get_text(strip=True) if time_el else ""
-                canonical_time = normalize_draw_time(raw_time) if raw_time else mapping.job_def.draw_time
+                canonical_time = normalize_draw_time(raw_time) if raw_time else "unknown"
 
                 results.append(RawDrawResult(
                     state=mapping.job_def.state,
@@ -285,7 +287,7 @@ def _json_row_to_result(
     if not _is_valid_number(number, mapping.job_def.game_type):
         return None
 
-    canonical_time = normalize_draw_time(str(raw_time)) if raw_time else mapping.job_def.draw_time
+    canonical_time = normalize_draw_time(str(raw_time)) if raw_time else "unknown"
 
     return RawDrawResult(
         state=mapping.job_def.state,

@@ -109,6 +109,26 @@ def _reconcile_one(
     obs_prio   = obs["source_priority"]
     now        = now_utc()
 
+    # Observations with draw_time="unknown" come from unlabeled daily-aggregate
+    # sources (e.g. lotteryusa.com for states with 3 draws/day). Reconciling
+    # them into a specific draw_time slot would fabricate false hits.
+    if obs["draw_time"] == "unknown":
+        _mark_obs(
+            conn, obs_id, ReconciliationStatus.ANOMALY,
+            "draw_time='unknown': unlabeled daily-aggregate result; "
+            "cannot reconcile into a specific draw_time slot",
+        )
+        update_coverage(
+            conn,
+            state=obs["state"], game_type=obs["game_type"],
+            draw_date=obs["draw_date"], draw_time=obs["draw_time"],
+            status=CoverageStatus.SCRAPE_ERROR,
+            source_name=obs["source_name"],
+            notes="draw_time=unknown: ambiguous daily-aggregate source",
+        )
+        stats["errors"] += 1
+        return
+
     existing = conn.execute(
         "SELECT id, winning_number, accepted_source_priority, observation_count "
         "FROM draws WHERE canonical_key=?",

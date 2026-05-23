@@ -27,10 +27,10 @@ DEFAULT_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xhtml+xml",
     "Accept-Language": "en-US,en;q=0.9",
 }
-REQUEST_TIMEOUT = 60      # increased from 30 — prevents premature timeout on slow sources
+REQUEST_TIMEOUT = 60     # seconds — raised from 30 to handle slow lottery.net responses
+MAX_RETRIES = 3          # retry on timeout
+_RETRY_DELAYS = (2, 4, 8)  # exponential backoff seconds
 RATE_LIMIT_DELAY = 1.5   # seconds between requests to same host
-RETRY_ATTEMPTS   = 3     # retry count for timeout/connection errors
-RETRY_BACKOFF    = 2.0   # seconds; doubles each attempt
 
 
 @dataclass
@@ -106,8 +106,8 @@ class SourceParser(ABC):
         self.session: Session = requests.Session()
         self.session.headers.update(DEFAULT_HEADERS)
         self._last_request_time: float = 0.0
-        self.timeout_count:      int   = 0    # incremented on each timeout
-        self.error_count:        int   = 0    # incremented on non-timeout errors
+        self._timeout_count: int = 0
+        self._error_count: int = 0
 
     def _rate_limit(self) -> None:
         elapsed = time.time() - self._last_request_time
@@ -116,36 +116,28 @@ class SourceParser(ABC):
         self._last_request_time = time.time()
 
     def _get(self, url: str) -> requests.Response | None:
-        """Fetch a URL with rate limiting, retry, and error tracking."""
+        """Fetch a URL with rate limiting, retry on timeout (up to MAX_RETRIES)."""
         self._rate_limit()
-        delay = RETRY_BACKOFF
-        for attempt in range(1, RETRY_ATTEMPTS + 1):
+        last_exc = None
+        for attempt in range(MAX_RETRIES):
             try:
                 resp = self.session.get(url, timeout=REQUEST_TIMEOUT)
                 resp.raise_for_status()
                 return resp
-            except (requests.Timeout, requests.ConnectionError) as e:
-                self.timeout_count += 1
+            except requests.Timeout as e:
+                self._timeout_count += 1
+                last_exc = e
                 logger.warning(
-                    "Fetch timeout/connection error for %s (attempt %d/%d): %s",
-                    url, attempt, RETRY_ATTEMPTS, e,
+                    "Fetch timeout (attempt %d/%d) for %s: %s",
+                    attempt + 1, MAX_RETRIES, url, e,
                 )
-                if attempt < RETRY_ATTEMPTS:
-                    logger.info("Retrying in %.1fs...", delay)
-                    time.sleep(delay)
-                    delay *= 2
-                else:
-                    logger.error("All %d attempts failed for %s", RETRY_ATTEMPTS, url)
-                    return None
-            except requests.HTTPError as e:
-                # Don't retry fatal HTTP errors (4xx) — only transient failures
-                self.error_count += 1
-                logger.warning("HTTP error for %s: %s", url, e)
-                return None
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(_RETRY_DELAYS[attempt])
             except requests.RequestException as e:
-                self.error_count += 1
+                self._error_count += 1
                 logger.warning("Fetch failed for %s: %s", url, e)
                 return None
+        logger.warning("All %d fetch attempts timed out for %s: %s", MAX_RETRIES, url, last_exc)
         return None
 
     def fetch_results(
