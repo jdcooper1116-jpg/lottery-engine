@@ -151,8 +151,7 @@ def run_cleanup(
                 f"""
                 UPDATE draw_observations
                 SET reconciliation_status = 'anomaly',
-                    conflict_note = 'ambiguous_draw_time: same number from same URL '
-                                    'appeared across multiple draw_time slots'
+                    conflict_note = 'ambiguous_draw_time: same number from same URL appeared across multiple draw_time slots'
                 WHERE id IN ({placeholders})
                 """,
                 obs_ids_to_mark,
