@@ -273,6 +273,26 @@ def admin_import_observations(
             clean["scraped_at"] = now_utc
             valid_rows.append(clean)
 
+    # De-duplicate repeated rows within the same payload before any DB write.
+    # This protects production even when a local export contains repeated
+    # draw_observations from previous import/ingest reruns.
+    in_payload_duplicates = 0
+    seen_payload_keys = set()
+    deduped_valid_rows = []
+    for r in valid_rows:
+        key = (
+            r["canonical_key"],
+            r["source_name"],
+            r["winning_number"],
+            r["source_url"],
+        )
+        if key in seen_payload_keys:
+            in_payload_duplicates += 1
+            continue
+        seen_payload_keys.add(key)
+        deduped_valid_rows.append(r)
+    valid_rows = deduped_valid_rows
+
     rows_received = len(body.rows)
     rows_valid    = len(valid_rows)
     rows_rejected = len(rejected)
@@ -288,7 +308,7 @@ def admin_import_observations(
             "rows_rejected":        rows_rejected,
             "rejected":             rejected,
             "observations_inserted":              0,
-            "observations_duplicate_or_existing": 0,
+            "observations_duplicate_or_existing": in_payload_duplicates,
             "reconcile_stats":      {},
             "accepted_after_reconcile":           [],
             "preview_valid_rows": [
@@ -399,7 +419,7 @@ def admin_import_observations(
         "rows_rejected":                     rows_rejected,
         "rejected":                          rejected,
         "observations_inserted":             observations_inserted,
-        "observations_duplicate_or_existing": observations_existing,
+        "observations_duplicate_or_existing": observations_existing + in_payload_duplicates,
         "reconcile_stats":                   reconcile_stats,
         "accepted_after_reconcile":          accepted_sample,
     }

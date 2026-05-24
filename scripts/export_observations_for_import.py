@@ -149,6 +149,22 @@ def main() -> int:
         for r in rows
     ]
 
+    # De-duplicate exported rows. Local draw_observations may contain
+    # repeated observations from previous reruns; the import payload should
+    # contain one trusted row per source observation identity.
+    seen_import_keys = set()
+    deduped_import_rows = []
+    for r in import_rows:
+        key = (
+            r["state"], r["game_type"], r["draw_date"], r["draw_time"],
+            r["winning_number"], r["source_name"], r["source_url"],
+        )
+        if key in seen_import_keys:
+            continue
+        seen_import_keys.add(key)
+        deduped_import_rows.append(r)
+    import_rows = deduped_import_rows
+
     batch_label = args.batch_label or (
         f"{args.state.lower()}-{args.game_type}-"
         f"{args.start}-to-{args.end}-{args.source.replace('.', '-')}"
