@@ -600,64 +600,46 @@ def check_14_recent_coverage_gaps(conn, state, game, recent_days: int) -> CheckR
 
 def check_15_suspicious_all_drawtime_duplication(conn, state, game) -> CheckResult:
     """
-    Detect accepted draws that appear to have been fabricated by copying one
-    daily-aggregate source URL across multiple draw_time slots.
-
-    Important distinction:
-    - Same winning number from DIFFERENT per-draw-time URLs can be a real coincidence.
-    - Same winning number from the SAME source_url across multiple draw_times is suspicious.
+    Detect rows in draws where the same winning_number and source appears
+    in all draw_times for the same state/game/date — the GA lotteryusa pattern.
     """
-    w, p = _state_game_where(state, game, "d")
-
+    w, p = _state_game_where(state, game)
+    # First find how many draw_times each state/game uses
     dt_counts = {
         (r["state"], r["game_type"]): r["dt_count"]
         for r in rows_to_dicts(conn.execute(
             f"""
             SELECT state, game_type, COUNT(DISTINCT draw_time) AS dt_count
-            FROM draws {w.replace('d.', '') if w else ''}
+            FROM draws {w}
             GROUP BY state, game_type
             """, p).fetchall())
     }
 
-    rows = rows_to_dicts(conn.execute(
+    # Now look for same winning_number+source on same date spanning all draw_times
+    all_rows = rows_to_dicts(conn.execute(
         f"""
-        SELECT
-            d.state,
-            d.game_type,
-            d.draw_date,
-            d.accepted_from_source,
-            o.source_url,
-            d.winning_number,
-            COUNT(DISTINCT d.draw_time) AS occupied_draw_times,
-            GROUP_CONCAT(DISTINCT d.draw_time ORDER BY d.draw_time) AS draw_times,
-            GROUP_CONCAT(DISTINCT d.canonical_key ORDER BY d.canonical_key) AS canonical_keys,
-            GROUP_CONCAT(DISTINCT o.raw_draw_time_label ORDER BY o.raw_draw_time_label) AS raw_draw_time_labels,
-            GROUP_CONCAT(DISTINCT o.reconciliation_status ORDER BY o.reconciliation_status) AS statuses
-        FROM draws d
-        JOIN draw_observations o
-          ON o.canonical_key = d.canonical_key
-         AND o.source_name = d.accepted_from_source
-         AND o.winning_number = d.winning_number
-        {w}
-        GROUP BY
-            d.state,
-            d.game_type,
-            d.draw_date,
-            d.accepted_from_source,
-            o.source_url,
-            d.winning_number
-        HAVING COUNT(DISTINCT d.draw_time) >= 2
-        ORDER BY d.state, d.game_type, d.draw_date
+        SELECT state, game_type, draw_date, accepted_from_source, winning_number,
+               COUNT(DISTINCT draw_time)                           AS occupied_draw_times,
+               GROUP_CONCAT(DISTINCT draw_time ORDER BY draw_time) AS draw_times
+        FROM draws {w}
+        GROUP BY state, game_type, draw_date, accepted_from_source, winning_number
+        HAVING COUNT(DISTINCT draw_time) >= 2
+        ORDER BY state, game_type, draw_date
         """, p).fetchall())
 
+    # Flag rows where occupied_draw_times == total draw_times for that state/game
     suspicious = []
-    for r in rows:
+    for r in all_rows:
         key = (r["state"], r["game_type"])
         total_dts = dt_counts.get(key, 1)
-        r["total_draw_times_for_game"] = total_dts
-        r["is_full_sweep"] = r["occupied_draw_times"] >= total_dts
-        r["duplication_basis"] = "same_source_url"
-        suspicious.append(r)
+        if r["occupied_draw_times"] >= total_dts:
+            r["total_draw_times_for_game"] = total_dts
+            r["is_full_sweep"] = True
+            suspicious.append(r)
+        elif r["occupied_draw_times"] >= 2:
+            r["total_draw_times_for_game"] = total_dts
+            r["is_full_sweep"] = False
+            suspicious.append(r)
 
     return CheckResult(
         check_id=15,
@@ -666,12 +648,11 @@ def check_15_suspicious_all_drawtime_duplication(conn, state, game) -> CheckResu
         row_count=len(suspicious),
         rows=suspicious,
         description=(
-            "Accepted draws where the same winning_number from the same source_url "
-            "appears in 2+ draw_time slots on one date. This catches daily-aggregate "
-            "source duplication while ignoring real coincidences from separate "
-            "per-draw-time URLs."
+            "Same winning_number from the same source appears in 2+ accepted draws "
+            "for different draw_times on the same date. Full-sweep rows (covering ALL "
+            "draw_times) are the GA lotteryusa pattern of fabricated draws."
         ),
-        ok=len(suspicious) == 0,
+        ok=len([r for r in suspicious if r.get("is_full_sweep")]) == 0,
     )
 
 

@@ -253,6 +253,7 @@ def admin_import_observations(
     Idempotent: INSERT OR IGNORE means re-importing the same rows is safe.
     """
     _require_ingest_token(x_ingest_token)
+    initialize_db()
 
     from datetime import datetime, timezone
     now_utc = datetime.now(timezone.utc).isoformat()
@@ -274,8 +275,8 @@ def admin_import_observations(
             valid_rows.append(clean)
 
     # De-duplicate repeated rows within the same payload before any DB write.
-    # This protects production even when a local export contains repeated
-    # draw_observations from previous import/ingest reruns.
+    # This protects production when a local DB/export contains repeated
+    # draw_observations from previous ingest/import reruns.
     in_payload_duplicates = 0
     seen_payload_keys = set()
     deduped_valid_rows = []
@@ -499,7 +500,6 @@ def admin_audit_database_integrity(
         except Exception:
             repair_queue_count = 0
     else:
-        # Fallback: approximate from failing CRITICAL/HIGH checks.
         repair_queue_count = sum(
             c.row_count for c in summary.checks
             if (not c.ok) and str(c.severity).upper() in {"CRITICAL", "HIGH"}
@@ -530,6 +530,103 @@ def admin_audit_database_integrity(
         "low_count":         summary.low_count,
     }
 
+
+# ------------------------------------------------------------------
+# GET /admin/audit/artifact
+# ------------------------------------------------------------------
+
+_AUDIT_BASE = Path("/data/audits")
+
+_ALLOWED_AUDIT_FILES = {
+    "audit_summary.json",
+    "audit_summary.md",
+    "repair_queue_candidates.csv",
+    "duplicate_drawtime_groups.csv",
+    "conflict_rows.csv",
+    "observation_bad_status_clusters.csv",
+    "coverage_mismatches.csv",
+    "recent_coverage_gaps.csv",
+    "source_reliability.csv",
+    "latest_coverage_by_state_game_drawtime.csv",
+}
+
+_MD_MAX_CHARS = 32_000
+
+
+@app.get("/admin/audit/artifact")
+def admin_audit_artifact(
+    audit_id: str = Query(..., description="Timestamp label, e.g. 20260524T023827Z"),
+    filename: str = Query(..., description="One of the allowed audit output filenames"),
+    limit: int = Query(default=50, ge=1, le=500, description="Max CSV rows to return"),
+    x_ingest_token: Optional[str] = Header(default=None, alias="X-Ingest-Token"),
+):
+    _require_ingest_token(x_ingest_token)
+
+    # Allowlist check — reject before touching the filesystem
+    if filename not in _ALLOWED_AUDIT_FILES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"filename must be one of: {sorted(_ALLOWED_AUDIT_FILES)}",
+        )
+
+    # Path-traversal guard: audit_id must be a plain name with no slashes or dots
+    if "/" in audit_id or "\\" in audit_id or ".." in audit_id:
+        raise HTTPException(status_code=400, detail="audit_id contains invalid characters")
+
+    artifact_path = (_AUDIT_BASE / audit_id / filename).resolve()
+    expected_base = (_AUDIT_BASE / audit_id).resolve()
+
+    # Confirm resolved path is strictly under the expected directory
+    try:
+        artifact_path.relative_to(expected_base)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Path traversal detected")
+
+    if not artifact_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Artifact not found: /data/audits/{audit_id}/{filename}",
+        )
+
+    import csv as _csv
+    import io as _io
+
+    if filename.endswith(".csv"):
+        text = artifact_path.read_text(encoding="utf-8")
+        reader = _csv.DictReader(_io.StringIO(text))
+        all_rows = list(reader)
+        returned = all_rows[:limit]
+        return {
+            "ok":            True,
+            "audit_id":      audit_id,
+            "filename":      filename,
+            "total_rows":    len(all_rows),
+            "returned_rows": len(returned),
+            "rows":          returned,
+        }
+
+    if filename.endswith(".json"):
+        try:
+            parsed = json.loads(artifact_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Could not parse JSON: {exc}")
+        return {
+            "ok":       True,
+            "audit_id": audit_id,
+            "filename": filename,
+            "content":  parsed,
+        }
+
+    # .md
+    text = artifact_path.read_text(encoding="utf-8")
+    truncated = len(text) > _MD_MAX_CHARS
+    return {
+        "ok":       True,
+        "audit_id": audit_id,
+        "filename": filename,
+        "truncated": truncated,
+        "content":  text[:_MD_MAX_CHARS],
+    }
 
 
 # ------------------------------------------------------------------

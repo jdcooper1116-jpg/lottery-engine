@@ -149,15 +149,20 @@ def main() -> int:
         for r in rows
     ]
 
-    # De-duplicate exported rows. Local draw_observations may contain
-    # repeated observations from previous reruns; the import payload should
+    # De-duplicate exported rows. The local draw_observations table may
+    # contain repeated observations from reruns; the import payload should
     # contain one trusted row per source observation identity.
     seen_import_keys = set()
     deduped_import_rows = []
     for r in import_rows:
         key = (
-            r["state"], r["game_type"], r["draw_date"], r["draw_time"],
-            r["winning_number"], r["source_name"], r["source_url"],
+            r["state"],
+            r["game_type"],
+            r["draw_date"],
+            r["draw_time"],
+            r["winning_number"],
+            r["source_name"],
+            r["source_url"],
         )
         if key in seen_import_keys:
             continue
