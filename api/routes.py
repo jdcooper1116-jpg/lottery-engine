@@ -426,6 +426,113 @@ def admin_import_observations(
 
 
 # ------------------------------------------------------------------
+# POST /admin/audit/database-integrity
+# ------------------------------------------------------------------
+
+class AuditIntegrityBody(BaseModel):
+    state:           Optional[str] = None
+    game:            Optional[str] = None
+    recent_days:     int           = 45
+    format:          str           = "all"
+    write_artifacts: bool          = True
+
+
+@app.post("/admin/audit/database-integrity")
+def admin_audit_database_integrity(
+    body: AuditIntegrityBody = Body(default_factory=AuditIntegrityBody),
+    x_ingest_token: Optional[str] = Header(default=None, alias="X-Ingest-Token"),
+):
+    _require_ingest_token(x_ingest_token)
+
+    # Lazy import avoids import-time path issues; scripts/ is a sibling of api/
+    _scripts_dir = Path(__file__).parent.parent / "scripts"
+    if str(_scripts_dir) not in sys.path:
+        sys.path.insert(0, str(_scripts_dir))
+    from audit_database_integrity import run_audit  # type: ignore
+
+    from db.connection import get_db_path
+    import tempfile, datetime as _dt
+
+    db_path = get_db_path()
+
+    if body.write_artifacts:
+        ts_label = _dt.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        out_dir = Path("/data/audits") / ts_label
+        out_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        _tmp = tempfile.mkdtemp(prefix="audit_")
+        out_dir = Path(_tmp)
+
+    try:
+        summary = run_audit(
+            db_path=db_path,
+            out_dir=out_dir,
+            state=body.state,
+            game=body.game,
+            recent_days=body.recent_days,
+            fmt=body.format,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Audit failed: {exc}") from exc
+
+    check_summaries = [
+        {
+            "check_id":   c.check_id,
+            "name":       c.name,
+            "severity":   c.severity,
+            "ok":         c.ok,
+            "row_count":  c.row_count,
+        }
+        for c in summary.checks
+    ]
+
+    artifact_files: list[str] = []
+    if out_dir.exists():
+        artifact_files = sorted(p.name for p in out_dir.iterdir() if p.is_file())
+
+    repair_queue_count = 0
+    repair_queue_path = out_dir / "repair_queue_candidates.csv"
+    if repair_queue_path.exists():
+        try:
+            # subtract CSV header row
+            repair_queue_count = max(0, sum(1 for _ in repair_queue_path.open("r", encoding="utf-8")) - 1)
+        except Exception:
+            repair_queue_count = 0
+    else:
+        # Fallback: approximate from failing CRITICAL/HIGH checks.
+        repair_queue_count = sum(
+            c.row_count for c in summary.checks
+            if (not c.ok) and str(c.severity).upper() in {"CRITICAL", "HIGH"}
+        )
+
+    overall_status = "PASS" if summary.overall_ok else (
+        "CRITICAL" if summary.critical_count > 0 else "HIGH"
+    )
+
+    return {
+        "ok":                summary.overall_ok,
+        "db_path":           db_path,
+        "audit_timestamp":   summary.run_at,
+        "overall_status":    overall_status,
+        "severity_counts": {
+            "critical": summary.critical_count,
+            "high":     summary.high_count,
+            "medium":   summary.medium_count,
+            "low":      summary.low_count,
+        },
+        "check_summaries":   check_summaries,
+        "artifact_dir":      str(out_dir) if body.write_artifacts else None,
+        "artifact_files":    artifact_files,
+        "repair_queue_count": repair_queue_count,
+        "critical_count":    summary.critical_count,
+        "high_count":        summary.high_count,
+        "medium_count":      summary.medium_count,
+        "low_count":         summary.low_count,
+    }
+
+
+
+# ------------------------------------------------------------------
 # Pydantic request bodies
 # ------------------------------------------------------------------
 

@@ -96,7 +96,7 @@ All files are written to `--out-dir` (default `outputs/audits/<timestamp>/`).
 | # | Name | What it catches |
 |---|------|----------------|
 | 1 | `duplicate_canonical_keys_in_draws` | `canonical_key` appears more than once in `draws` (UNIQUE constraint violation — should never happen) |
-| 2 | `same_number_across_draw_times_in_observations` | Same `winning_number + source_name` on the same date appears in 2+ `draw_time` slots in `draw_observations` — the classic daily-aggregate source duplication pattern |
+| 2 | `same_number_across_draw_times_in_observations` | Same `winning_number + source_url` on the same date appears in 2+ `draw_time` slots in `draw_observations` — the classic daily-aggregate source duplication pattern |
 | 4 | `pick3_wrong_digit_length` | Pick 3 draw row where `winning_number` length ≠ 3 |
 | 5 | `pick4_wrong_digit_length` | Pick 4 draw row where `winning_number` length ≠ 4 |
 | 6 | `leading_zero_risk` | Pick 3 number with fewer than 3 digits, or pick 4 number with fewer than 4 digits — likely a leading zero stripped by integer coercion |
@@ -202,6 +202,88 @@ To symlink the latest run:
 ```bash
 ln -sfn outputs/audits/$(ls -t outputs/audits/ | head -1) outputs/audits/latest
 ```
+
+---
+
+## Production Audit Route
+
+### Endpoint
+
+```
+POST /admin/audit/database-integrity
+```
+
+**Auth:** `X-Ingest-Token: <INGEST_ADMIN_TOKEN>` header required.
+
+**Strictly read-only.** No data is modified, reconciled, ingested, or cleaned.
+
+### Request Body
+
+```json
+{
+  "state":           null,
+  "game":            null,
+  "recent_days":     45,
+  "format":          "all",
+  "write_artifacts": true
+}
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `state` | string \| null | null | Filter to one state (e.g. `"GA"`). Null = all states. |
+| `game` | string \| null | null | Filter to one game type (`"pick3"` / `"pick4"`). Null = all. |
+| `recent_days` | int | 45 | Look-back window for recency checks. |
+| `format` | string | `"all"` | Output format: `"all"` writes md + json + all CSVs. |
+| `write_artifacts` | bool | true | When true, writes files to `/data/audits/<timestamp>/`. |
+
+### Response
+
+```json
+{
+  "ok": false,
+  "db_path": "/data/history_all_states.db",
+  "audit_timestamp": "2026-05-24T12:00:00.000000+00:00",
+  "overall_status": "HIGH",
+  "severity_counts": {"critical": 0, "high": 2, "medium": 1, "low": 0},
+  "check_summaries": [
+    {"check_id": "check_01", "name": "Duplicate canonical keys in draws", "severity": "CRITICAL", "ok": true, "row_count": 0},
+    ...
+  ],
+  "artifact_dir": "/data/audits/20260524T120000Z",
+  "artifact_files": ["audit_report.md", "audit_results.json", "repair_queue_candidates.csv", ...],
+  "repair_queue_count": 3,
+  "critical_count": 0,
+  "high_count": 2,
+  "medium_count": 1,
+  "low_count": 0
+}
+```
+
+CSV content is **not** returned in the response. Download artifacts from `artifact_dir` directly (Railway volume mount or `railway run cat /data/audits/<ts>/repair_queue_candidates.csv`).
+
+### Example curl
+
+```bash
+curl -sS -X POST https://<your-app>.railway.app/admin/audit/database-integrity \
+  -H "Content-Type: application/json" \
+  -H "X-Ingest-Token: $INGEST_ADMIN_TOKEN" \
+  -d '{"recent_days":45,"format":"all","write_artifacts":true}' \
+  | python3 -m json.tool
+```
+
+### Response Fields
+
+| Field | Meaning |
+|-------|---------|
+| `ok` | True only if all checks passed (no CRITICAL or HIGH issues). |
+| `overall_status` | `PASS`, `HIGH`, or `CRITICAL` — highest severity with a failing check. |
+| `severity_counts` | Dict with `critical`, `high`, `medium`, `low` — count of checks at each level that failed. |
+| `check_summaries` | One entry per check: `check_id`, `name`, `severity`, `ok`, `row_count`. |
+| `artifact_dir` | Path on the Railway volume where output files were written, or null if `write_artifacts=false`. |
+| `artifact_files` | List of filenames written (md, json, CSVs). |
+| `repair_queue_count` | Row count from `repair_queue_candidates.csv` when artifacts are written; otherwise an approximate count from failing CRITICAL/HIGH checks. |
+| `critical_count` etc. | Convenience duplicates of `severity_counts` fields. |
 
 ---
 
