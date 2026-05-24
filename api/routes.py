@@ -44,8 +44,9 @@ from query.service import (
 from registry.enums import DrawTime, SourceName
 from registry.loader import get_all_states, get_game_types_for_state
 from orchestrator.coverage import get_coverage_stats
-from orchestrator.runner import run_ingest
-from db.connection import get_connection, initialize_db
+from db.connection import get_connection, execute_batch, initialize_db
+from orchestrator.reconciler import reconcile_pending
+from registry.enums import SOURCE_PRIORITIES
 
 
 app = FastAPI(
@@ -110,28 +111,9 @@ def admin_ingest_recent(
             },
         )
 
-    # Raise an explicit error when ingest ran but returned nothing useful.
-    raw_total = status.get("raw_results_total", -1)
-    if raw_total == 0:
-        raise HTTPException(
-            status_code=502,
-            detail={
-                "message": "Recent ingest completed with 0 raw results — sources may be unreachable",
-                "fetch_timeout_count": status.get("fetch_timeout_count", 0),
-                "fetch_error_count": status.get("fetch_error_count", 0),
-                "states_with_zero_rows": status.get("states_with_zero_rows", []),
-                "status": status,
-            },
-        )
-
     return {
         "ok": True,
         "message": "Recent ingest completed",
-        "raw_results_total": raw_total,
-        "observations_written_total": status.get("observations_written_total", 0),
-        "states_with_zero_rows": status.get("states_with_zero_rows", []),
-        "fetch_timeout_count": status.get("fetch_timeout_count", 0),
-        "fetch_error_count": status.get("fetch_error_count", 0),
         "status": status,
         "stdout_tail": proc.stdout[-1500:],
     }
@@ -155,114 +137,272 @@ def admin_ingest_status(
     return {"ok": True, "status": status}
 
 
-class TargetedIngestBody(BaseModel):
-    state: str
-    game_type: str
-    start_date: date
-    end_date: date
-    source_name: Optional[str] = None
-    reconcile: bool = True
+# ------------------------------------------------------------------
+# /admin/import/observations
+# ------------------------------------------------------------------
+
+VALID_IMPORT_DRAW_TIMES = {"midday", "evening", "night", "morning", "day"}
+VALID_IMPORT_GAME_TYPES = {"pick3", "pick4"}
+_EXPECTED_DIGITS = {"pick3": 3, "pick4": 4}
+_DATE_RE_STR = r"^\d{4}-\d{2}-\d{2}$"
+
+import re as _re
+_DATE_RE = _re.compile(_DATE_RE_STR)
 
 
-@app.post("/admin/ingest/targeted")
-def admin_ingest_targeted(
-    body: TargetedIngestBody,
-    x_ingest_token: str | None = Header(default=None, alias="X-Ingest-Token"),
-):
+class ImportObservationRow(BaseModel):
+    state:              str
+    game_type:          str
+    draw_date:          str
+    draw_time:          str
+    winning_number:     str
+    source_name:        Optional[str] = None   # falls back to top-level source_name
+    source_url:         str = ""
+    raw_draw_time_label: str = ""
+
+
+class ImportObservationsBody(BaseModel):
+    dry_run:     bool = True
+    reconcile:   bool = True
+    batch_label: str  = ""
+    source_name: Optional[str] = None         # default source for rows that omit it
+    rows:        list[ImportObservationRow] = Field(default_factory=list)
+
+
+def _validate_import_row(
+    idx: int,
+    row: ImportObservationRow,
+    default_source: str | None,
+) -> tuple[dict | None, dict | None]:
     """
-    Run a targeted ingest for a single state/game/date-range.
-    Tries all registered sources (lottery.net → lotterycorner.com → lotteryusa.com)
-    unless source_name is specified.
-
-    Example body:
-        {"state": "GA", "game_type": "pick3",
-         "start_date": "2026-05-15", "end_date": "2026-05-16"}
+    Validate one import row. Returns (clean_dict, error_dict).
+    Exactly one of the two is None.
     """
-    _require_ingest_token(x_ingest_token)
-    initialize_db()
+    errors = []
 
-    summary = run_ingest(
-        start_date=body.start_date,
-        end_date=body.end_date,
-        state=body.state.upper(),
-        game_type=body.game_type.lower(),
-        source_name=body.source_name,
-        reconcile=body.reconcile,
-    )
+    state = (row.state or "").strip().upper()
+    if not state:
+        errors.append("state is required")
 
-    if summary["raw_results"] == 0:
-        raise HTTPException(
-            status_code=502,
-            detail={
-                "message": (
-                    f"Targeted ingest for {body.state.upper()} {body.game_type} "
-                    f"{body.start_date}..{body.end_date} returned 0 raw results — "
-                    "source pages may be unavailable"
-                ),
-                "summary": summary,
-            },
-        )
+    game_type = (row.game_type or "").strip().lower()
+    if game_type not in VALID_IMPORT_GAME_TYPES:
+        errors.append(f"game_type must be one of {sorted(VALID_IMPORT_GAME_TYPES)}, got {row.game_type!r}")
 
-    if summary.get("observations_written", 0) == 0:
-        raise HTTPException(
-            status_code=409 if summary.get("ambiguous_discarded", 0) else 502,
-            detail={
-                "message": (
-                    "Targeted ingest fetched raw rows but wrote 0 clean observations. "
-                    "Rows may have been discarded as ambiguous draw-time data."
-                ),
-                "summary": summary,
-            },
-        )
+    draw_time = (row.draw_time or "").strip().lower()
+    if draw_time not in VALID_IMPORT_DRAW_TIMES:
+        errors.append(f"draw_time must be one of {sorted(VALID_IMPORT_DRAW_TIMES)}, got {row.draw_time!r}")
+
+    draw_date = (row.draw_date or "").strip()
+    if not _DATE_RE.match(draw_date):
+        errors.append(f"draw_date must be YYYY-MM-DD, got {row.draw_date!r}")
+
+    # winning_number: preserve as string, strip only surrounding whitespace
+    winning_number = (row.winning_number or "").strip()
+    if not winning_number.isdigit():
+        errors.append(f"winning_number must contain only digits, got {row.winning_number!r}")
+    elif game_type in _EXPECTED_DIGITS:
+        expected = _EXPECTED_DIGITS[game_type]
+        if len(winning_number) != expected:
+            errors.append(
+                f"winning_number for {game_type} must be exactly {expected} digits "
+                f"(preserve leading zeros), got {winning_number!r} ({len(winning_number)} digits)"
+            )
+
+    source_name = (row.source_name or default_source or "").strip()
+    if not source_name:
+        errors.append("source_name is required (set on row or top-level)")
+
+    if errors:
+        return None, {"row_index": idx, "reasons": errors,
+                      "row": row.model_dump()}
+
+    # Compute derived fields — same logic as RawDrawResult.__post_init__
+    digit_count  = len(winning_number)
+    sorted_digits = "".join(sorted(winning_number))   # character sort preserves leading zeros
+    canonical_key = f"{state}|{game_type}|{draw_date}|{draw_time}"
+    source_priority = SOURCE_PRIORITIES.get(source_name, 99)
 
     return {
-        "ok": True,
-        "state": body.state.upper(),
-        "game_type": body.game_type.lower(),
-        "start_date": body.start_date.isoformat(),
-        "end_date": body.end_date.isoformat(),
-        "tasks_run": summary["tasks_run"],
-        "raw_results": summary["raw_results"],
-        "observations_written": summary["observations_written"],
-        "ambiguous_discarded": summary.get("ambiguous_discarded", 0),
-        "reconcile_stats": summary.get("reconcile_stats", {}),
-    }
+        "canonical_key":      canonical_key,
+        "state":              state,
+        "game_type":          game_type,
+        "draw_date":          draw_date,
+        "draw_time":          draw_time,
+        "winning_number":     winning_number,
+        "digit_count":        digit_count,
+        "sorted_digits":      sorted_digits,
+        "source_name":        source_name,
+        "source_priority":    source_priority,
+        "source_url":         (row.source_url or "").strip(),
+        "raw_draw_time_label": (row.raw_draw_time_label or "").strip(),
+    }, None
 
 
-class CleanupAmbiguousBody(BaseModel):
-    state: Optional[str] = None
-    game_type: Optional[str] = None
-    source_name: Optional[str] = "lotteryusa.com"
-    dry_run: bool = False
-
-
-@app.post("/admin/cleanup/ambiguous-draw-times")
-def admin_cleanup_ambiguous_draw_times(
-    body: CleanupAmbiguousBody = Body(default_factory=CleanupAmbiguousBody),
+@app.post("/admin/import/observations")
+def admin_import_observations(
+    body: ImportObservationsBody,
     x_ingest_token: str | None = Header(default=None, alias="X-Ingest-Token"),
 ):
     """
-    Find draw_observations where the same (state, game_type, draw_date,
-    winning_number, source_url) appears across 2+ draw_time slots, then:
-      - Mark those observations reconciliation_status='anomaly'
-      - Delete or revert any draws that were accepted from those observations
-      - Update scrape_coverage to scrape_error for affected slots
+    Import pre-parsed, trusted draw_observations directly into the DB.
+    Does NOT scrape. Writes to draw_observations only; the reconciler
+    promotes rows to draws.
 
-    Use dry_run=true to see what would be affected without making changes.
+    Set dry_run=true to validate and preview without writing anything.
+    Set reconcile=true (with dry_run=false) to run reconciliation after insert.
+    Idempotent: INSERT OR IGNORE means re-importing the same rows is safe.
     """
     _require_ingest_token(x_ingest_token)
-    initialize_db()
 
-    import scripts.cleanup_ambiguous_lotteryusa as cleanup_mod
+    from datetime import datetime, timezone
+    now_utc = datetime.now(timezone.utc).isoformat()
 
-    result = cleanup_mod.run_cleanup(
-        state=body.state.upper() if body.state else None,
-        game_type=body.game_type.lower() if body.game_type else None,
-        source_name=body.source_name,
-        dry_run=body.dry_run,
-    )
+    db_path = os.environ.get("LOTTERY_DB_PATH", "")
 
-    return {"ok": True, "dry_run": body.dry_run, **result}
+    # ------------------------------------------------------------------
+    # Validate all rows first — collect valid + rejected before any write
+    # ------------------------------------------------------------------
+    valid_rows: list[dict] = []
+    rejected:   list[dict] = []
+
+    for idx, row in enumerate(body.rows):
+        clean, err = _validate_import_row(idx, row, body.source_name)
+        if err:
+            rejected.append(err)
+        else:
+            clean["scraped_at"] = now_utc
+            valid_rows.append(clean)
+
+    rows_received = len(body.rows)
+    rows_valid    = len(valid_rows)
+    rows_rejected = len(rejected)
+
+    if body.dry_run:
+        return {
+            "ok":                   True,
+            "dry_run":              True,
+            "db_path":              db_path or "(from env)",
+            "batch_label":          body.batch_label,
+            "rows_received":        rows_received,
+            "rows_valid":           rows_valid,
+            "rows_rejected":        rows_rejected,
+            "rejected":             rejected,
+            "observations_inserted":              0,
+            "observations_duplicate_or_existing": 0,
+            "reconcile_stats":      {},
+            "accepted_after_reconcile":           [],
+            "preview_valid_rows": [
+                {k: v for k, v in r.items() if k != "scraped_at"}
+                for r in valid_rows[:20]
+            ],
+        }
+
+    # ------------------------------------------------------------------
+    # Write phase — INSERT OR IGNORE into draw_observations
+    # ------------------------------------------------------------------
+    insert_sql = """
+        INSERT OR IGNORE INTO draw_observations (
+            canonical_key,
+            state, game_type, draw_date, draw_time,
+            winning_number, digit_count, sorted_digits,
+            source_name, source_priority, source_url,
+            scraped_at,
+            reconciliation_status,
+            conflict_note,
+            raw_draw_time_label
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    """
+
+    insert_params = [
+        (
+            r["canonical_key"],
+            r["state"], r["game_type"], r["draw_date"], r["draw_time"],
+            r["winning_number"], r["digit_count"], r["sorted_digits"],
+            r["source_name"], r["source_priority"], r["source_url"],
+            r["scraped_at"],
+            "pending",
+            None,
+            r["raw_draw_time_label"],
+        )
+        for r in valid_rows
+    ]
+
+    observations_inserted = 0
+    observations_existing = 0
+
+    with get_connection() as conn:
+        # Pre-filter: skip observation rows that already exist with the
+        # same (canonical_key, source_name, winning_number, source_url).
+        # draw_observations has no UNIQUE constraint so INSERT OR IGNORE
+        # wouldn't deduplicate — we do it here to keep the endpoint truly
+        # idempotent at the observation layer.
+        new_params = []
+        for params in insert_params:
+            ck, _, _, _, _, wn, _, _, sn, _, su = params[:11]
+            exists = conn.execute(
+                """
+                SELECT 1 FROM draw_observations
+                WHERE canonical_key=? AND source_name=?
+                  AND winning_number=? AND source_url=?
+                LIMIT 1
+                """,
+                (ck, sn, wn, su),
+            ).fetchone()
+            if exists:
+                observations_existing += 1
+            else:
+                new_params.append(params)
+
+        if new_params:
+            execute_batch(conn, insert_sql, new_params)
+        observations_inserted = len(new_params)
+
+    # ------------------------------------------------------------------
+    # Optional reconciliation
+    # ------------------------------------------------------------------
+    reconcile_stats: dict = {}
+    accepted_sample: list[dict] = []
+
+    if body.reconcile and valid_rows:
+        # Scope reconciliation to the states present in this import batch
+        states_in_batch = list({r["state"] for r in valid_rows})
+        with get_connection() as conn:
+            for st in states_in_batch:
+                partial = reconcile_pending(conn, state=st)
+                for k, v in partial.items():
+                    reconcile_stats[k] = reconcile_stats.get(k, 0) + v
+
+        # Pull a sample of newly accepted draws for confirmation
+        canonical_keys = [r["canonical_key"] for r in valid_rows]
+        placeholders = ",".join("?" * len(canonical_keys))
+        with get_connection() as conn:
+            sample_rows = conn.execute(
+                f"""
+                SELECT canonical_key, state, game_type, draw_date, draw_time,
+                       winning_number, accepted_from_source, is_verified
+                FROM draws
+                WHERE canonical_key IN ({placeholders})
+                ORDER BY draw_date, draw_time
+                LIMIT 50
+                """,
+                canonical_keys,
+            ).fetchall()
+        accepted_sample = [dict(r) for r in sample_rows]
+
+    return {
+        "ok":                                True,
+        "dry_run":                           False,
+        "db_path":                           db_path or "(from env)",
+        "batch_label":                       body.batch_label,
+        "rows_received":                     rows_received,
+        "rows_valid":                        rows_valid,
+        "rows_rejected":                     rows_rejected,
+        "rejected":                          rejected,
+        "observations_inserted":             observations_inserted,
+        "observations_duplicate_or_existing": observations_existing,
+        "reconcile_stats":                   reconcile_stats,
+        "accepted_after_reconcile":          accepted_sample,
+    }
 
 
 # ------------------------------------------------------------------
