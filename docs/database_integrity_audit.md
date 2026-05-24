@@ -101,7 +101,7 @@ All files are written to `--out-dir` (default `outputs/audits/<timestamp>/`).
 | 5 | `pick4_wrong_digit_length` | Pick 4 draw row where `winning_number` length ≠ 4 |
 | 6 | `leading_zero_risk` | Pick 3 number with fewer than 3 digits, or pick 4 number with fewer than 4 digits — likely a leading zero stripped by integer coercion |
 | 9 | `multiple_winning_numbers_per_canonical_key` | Two or more distinct winning numbers were ever observed for the same `canonical_key` — only one can be correct |
-| 15 | `suspicious_all_drawtime_duplication_in_draws` | Same `winning_number + source_url` appears in accepted `draws` rows across 2+ draw_times on one date — means one source page may have been copied into multiple canonical draw slots |
+| 15 | `suspicious_all_drawtime_duplication_in_draws` | Same `winning_number + accepted_from_source` appears in accepted `draws` rows across 2+ draw_times on one date — review for source-page duplication before trusting the affected state/game |
 
 ### HIGH — Fix before using the affected state/game in production.
 
@@ -282,7 +282,7 @@ curl -sS -X POST https://<your-app>.railway.app/admin/audit/database-integrity \
 | `check_summaries` | One entry per check: `check_id`, `name`, `severity`, `ok`, `row_count`. |
 | `artifact_dir` | Path on the Railway volume where output files were written, or null if `write_artifacts=false`. |
 | `artifact_files` | List of filenames written (md, json, CSVs). |
-| `repair_queue_count` | Row count from `repair_queue_candidates.csv` when artifacts are written; otherwise an approximate count from failing CRITICAL/HIGH checks. |
+| `repair_queue_count` | Row count from check_14 (repair queue candidates). |
 | `critical_count` etc. | Convenience duplicates of `severity_counts` fields. |
 
 ---
@@ -292,10 +292,55 @@ curl -sS -X POST https://<your-app>.railway.app/admin/audit/database-integrity \
 | Column | Meaning |
 |--------|---------|
 | `canonical_key` | `{state}\|{game_type}\|{draw_date}\|{draw_time}` — unique draw slot identifier |
-| `draw_time_count` / `occupied_draw_times` | Number of distinct draw_times that share the same winning_number+source_url |
+| `draw_time_count` / `occupied_draw_times` | Number of distinct draw_times that share the same winning_number+source |
 | `is_full_sweep` | True when the same number covers ALL draw_times for the game — strongest signal of fabrication |
 | `conflict_pct` | % of observations from that source that were marked `conflict` |
 | `anomaly_pct` | % of observations from that source that were marked `anomaly` |
 | `days_since_latest` | Days since the most recent accepted draw from that source |
 | `missing_leading_zeros` | How many digits are missing vs. expected length — 1 means one leading zero was likely stripped |
 | `coverage_status` | `accepted` / `scrape_error` / `anomaly` / `not_scraped` / `MISSING` (not in coverage table at all) |
+
+
+---
+
+## Production Audit Artifact Preview Route
+
+### Endpoint
+
+```
+GET /admin/audit/artifact
+```
+
+**Auth:** `X-Ingest-Token: <INGEST_ADMIN_TOKEN>` header required.
+
+**Strictly read-only.** This endpoint previews allowed audit artifact files under
+`/data/audits/<audit_id>/` and does not mutate the database.
+
+### Query Parameters
+
+| Parameter | Description |
+|---|---|
+| `audit_id` | Timestamp folder name, for example `20260524T023827Z`. |
+| `filename` | One of the allowed audit artifact filenames. |
+| `limit` | CSV row limit, default 50, max 500. |
+
+Allowed filenames include:
+
+- `audit_summary.json`
+- `audit_summary.md`
+- `repair_queue_candidates.csv`
+- `duplicate_drawtime_groups.csv`
+- `conflict_rows.csv`
+- `observation_bad_status_clusters.csv`
+- `coverage_mismatches.csv`
+- `recent_coverage_gaps.csv`
+- `source_reliability.csv`
+- `latest_coverage_by_state_game_drawtime.csv`
+
+### Example
+
+```bash
+curl -sS "$BASE/admin/audit/artifact?audit_id=20260524T023827Z&filename=repair_queue_candidates.csv&limit=100" \
+  -H "X-Ingest-Token: $TOKEN" \
+  | python3 -m json.tool
+```
