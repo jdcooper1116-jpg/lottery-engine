@@ -253,7 +253,6 @@ def admin_import_observations(
     Idempotent: INSERT OR IGNORE means re-importing the same rows is safe.
     """
     _require_ingest_token(x_ingest_token)
-    initialize_db()
 
     from datetime import datetime, timezone
     now_utc = datetime.now(timezone.utc).isoformat()
@@ -438,7 +437,7 @@ class AuditIntegrityBody(BaseModel):
 @app.post("/admin/audit/database-integrity")
 def admin_audit_database_integrity(
     body: AuditIntegrityBody = Body(default_factory=AuditIntegrityBody),
-    x_ingest_token: Optional[str] = Header(default=None, alias="X-Ingest-Token"),
+    x_ingest_token: Optional[str] = Header(None),
 ):
     _require_ingest_token(x_ingest_token)
 
@@ -538,6 +537,7 @@ _ALLOWED_AUDIT_FILES = {
     "source_reliability.csv",
     "latest_coverage_by_state_game_drawtime.csv",
     "stale_conflict_candidates.csv",
+    "same_number_natural_repeats.csv",
 }
 
 _MD_MAX_CHARS = 32_000
@@ -548,7 +548,7 @@ def admin_audit_artifact(
     audit_id: str = Query(..., description="Timestamp label, e.g. 20260524T023827Z"),
     filename: str = Query(..., description="One of the allowed audit output filenames"),
     limit: int = Query(default=50, ge=1, le=500, description="Max CSV rows to return"),
-    x_ingest_token: Optional[str] = Header(default=None, alias="X-Ingest-Token"),
+    x_ingest_token: Optional[str] = Header(None),
 ):
     _require_ingest_token(x_ingest_token)
 
@@ -634,7 +634,7 @@ class ClearStaleConflictBody(BaseModel):
 @app.post("/admin/repair/clear-stale-has-conflict")
 def admin_repair_clear_stale_conflict(
     body: ClearStaleConflictBody = Body(default_factory=ClearStaleConflictBody),
-    x_ingest_token: Optional[str] = Header(default=None, alias="X-Ingest-Token"),
+    x_ingest_token: Optional[str] = Header(None),
 ):
     """
     Clear stale has_conflict=1 flags from draws rows where every conflict

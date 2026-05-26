@@ -76,7 +76,8 @@ All files are written to `--out-dir` (default `outputs/audits/<timestamp>/`).
 
 | File | Checks | What's in it |
 |------|--------|-------------|
-| `duplicate_drawtime_groups.csv` | 2, 15 | Rows where the same winning number from the same source appears in 2+ draw_time slots for one date — the core symptom of the lotteryusa.com GA duplication bug |
+| `duplicate_drawtime_groups.csv` | 2, 15 | URL-backed fabrication evidence: same winning number + same non-empty source URL across 2+ draw_time slots for one date — the core symptom of the lotteryusa.com GA duplication bug |
+| `same_number_natural_repeats.csv` | 15 | **Informational only.** Same number across draw_times but from different URLs — legitimate lottery coincidences. Does not affect `overall_status`. |
 | `digit_length_issues.csv` | 4, 5 | Pick 3 draws where `winning_number` length ≠ 3, and pick 4 draws where length ≠ 4 |
 | `leading_zero_risk.csv` | 6 | Draws where `winning_number` is shorter than expected for the game type — possible `int()` coercion stripping a leading zero (e.g. `"042"` → `"42"`) |
 | `conflict_rows.csv` | 7, 9 | Accepted draws where sources disagreed on the winning number (`has_conflict=1`), and canonical_keys where 2+ distinct numbers were observed |
@@ -101,7 +102,7 @@ All files are written to `--out-dir` (default `outputs/audits/<timestamp>/`).
 | 5 | `pick4_wrong_digit_length` | Pick 4 draw row where `winning_number` length ≠ 4 |
 | 6 | `leading_zero_risk` | Pick 3 number with fewer than 3 digits, or pick 4 number with fewer than 4 digits — likely a leading zero stripped by integer coercion |
 | 9 | `multiple_winning_numbers_per_canonical_key` | Two or more distinct winning numbers were ever observed for the same `canonical_key` — only one can be correct |
-| 15 | `suspicious_all_drawtime_duplication_in_draws` | Same `winning_number + accepted_from_source` appears in accepted `draws` rows across 2+ draw_times on one date — means fabricated draws made it into the canonical table |
+| 15 | `suspicious_all_drawtime_duplication_in_draws` | **Source-URL-aware.** Same `winning_number` backed by the same **non-empty `source_url`** across 2+ accepted draw_time slots — the daily-aggregate copy pattern (fabrication). Natural coincidences (same number, different per-draw-time URLs) are written to `same_number_natural_repeats.csv` and are **not** CRITICAL. |
 
 ### HIGH — Fix before using the affected state/game in production.
 
@@ -160,8 +161,14 @@ accepted one per draw_time slot, creating three `draws` rows for one real draw.
 **Backtest effect:** A backtest for candidate `842` would report 3 hits on a
 single day — one per fabricated draw_time — instead of the true 0 or 1.
 
-**Audit detection:** Check 15 catches this in the `draws` table. Check 2
-catches it at the `draw_observations` layer before it reaches `draws`.
+**Audit detection (source-URL-aware):** Check 15 joins `draws` to `draw_observations`
+using `(canonical_key, accepted_from_source, winning_number)` and groups by `source_url`.
+It only flags groups where the **same non-empty source URL** backs accepted draws in 2+
+draw_time slots — the fabrication signal. Natural lottery coincidences (same number drawn
+at different times, each with its own per-draw-time URL) are excluded from CRITICAL and
+written to `same_number_natural_repeats.csv` for informational review only.
+
+Check 2 catches the same pattern at the `draw_observations` layer before it reaches `draws`.
 
 **Fix already applied:**
 - `registry/definitions/georgia.py`: lotteryusa.com mappings removed for GA.
@@ -299,43 +306,3 @@ curl -sS -X POST https://<your-app>.railway.app/admin/audit/database-integrity \
 | `days_since_latest` | Days since the most recent accepted draw from that source |
 | `missing_leading_zeros` | How many digits are missing vs. expected length — 1 means one leading zero was likely stripped |
 | `coverage_status` | `accepted` / `scrape_error` / `anomaly` / `not_scraped` / `MISSING` (not in coverage table at all) |
-
-
----
-
-## Anomaly-Aware Audit Behavior
-
-Anomaly observations are quarantined evidence. They remain visible in audit CSVs
-and source reliability summaries, but they are excluded from active conflict
-calculations for CRITICAL/HIGH audit gating. This preserves the historical
-evidence of source/parser problems without allowing already-quarantined rows to
-continue blocking all-state hit detection.
-
-
----
-
-## Stale Conflict Repair Route
-
-### Endpoint
-
-```
-POST /admin/repair/clear-stale-has-conflict
-```
-
-**Auth:** `X-Ingest-Token: <INGEST_ADMIN_TOKEN>` header required.
-
-This route clears only stale `draws.has_conflict=1` flags where:
-- no active `reconciliation_status='conflict'` observations remain, and
-- at least one `reconciliation_status='anomaly'` observation explains the stale flag.
-
-It does **not** change the accepted winning number, source, draw date, draw time, or any observation rows.
-
-### Dry-run example
-
-```bash
-curl -sS -X POST "$BASE/admin/repair/clear-stale-has-conflict" \
-  -H "Content-Type: application/json" \
-  -H "X-Ingest-Token: $TOKEN" \
-  -d '{"dry_run":true}' \
-  | python3 -m json.tool
-```

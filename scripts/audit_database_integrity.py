@@ -43,21 +43,22 @@ SEVERITY_LOW      = "LOW"
 
 @dataclass
 class CheckResult:
-    check_id:    int
-    name:        str
-    severity:    str
-    row_count:   int
-    rows:        list[dict] = field(default_factory=list)
-    description: str = ""
-    ok:          bool = True   # True = no issues found
+    check_id:         int
+    name:             str
+    severity:         str
+    row_count:        int
+    rows:             list[dict] = field(default_factory=list)
+    description:      str = ""
+    ok:               bool = True   # True = no issues found
+    _natural_repeats: list[dict] = field(default_factory=list)  # informational side-channel
 
     def to_summary_dict(self) -> dict:
         return {
-            "check_id":   self.check_id,
-            "name":       self.name,
-            "severity":   self.severity,
-            "ok":         self.ok,
-            "row_count":  self.row_count,
+            "check_id":    self.check_id,
+            "name":        self.name,
+            "severity":    self.severity,
+            "ok":          self.ok,
+            "row_count":   self.row_count,
             "description": self.description,
         }
 
@@ -653,59 +654,110 @@ def check_14_recent_coverage_gaps(conn, state, game, recent_days: int) -> CheckR
 
 def check_15_suspicious_all_drawtime_duplication(conn, state, game) -> CheckResult:
     """
-    Detect rows in draws where the same winning_number and source appears
-    in all draw_times for the same state/game/date — the GA lotteryusa pattern.
+    Detect draw slots where the same winning_number from the same source URL was
+    accepted into 2+ draw_time slots for the same state/game/date.
+
+    The corruption signal is: one source URL copied its result into multiple draw_time
+    slots (the GA lotteryusa daily-aggregate pattern). That is structurally different
+    from the same number happening to win at separate draw times, which is a legitimate
+    lottery coincidence.
+
+    Join draws → draw_observations to get the accepted observation's source_url.
+    Only flag when source_url IS NOT NULL AND source_url != '' so missing-URL evidence
+    does not produce false positives.
+
+    Natural same-number repeats (different URLs or no URL) are written to
+    same_number_natural_repeats.csv as informational only — they do not affect ok or
+    overall_status.
     """
-    w, p = _state_game_where(state, game)
-    # First find how many draw_times each state/game uses
+    w, p = _state_game_where(state, game, prefix="d")
+    dw = w.replace("WHERE ", "WHERE ") if w else ""
+
+    # Source-URL-aware: group by the observation URL that backed the accepted draw.
+    # Exclude anomaly observations so previously-quarantined rows don't re-trigger.
+    url_rows = rows_to_dicts(conn.execute(
+        f"""
+        SELECT d.state, d.game_type, d.draw_date,
+               d.accepted_from_source, d.winning_number,
+               o.source_url,
+               COUNT(DISTINCT d.draw_time)                           AS occupied_draw_times,
+               GROUP_CONCAT(DISTINCT d.draw_time ORDER BY d.draw_time) AS draw_times
+        FROM draws d
+        JOIN draw_observations o
+            ON  o.canonical_key       = d.canonical_key
+            AND o.source_name         = d.accepted_from_source
+            AND o.winning_number      = d.winning_number
+            AND o.reconciliation_status != 'anomaly'
+        {dw}
+        {"AND" if dw else "WHERE"} o.source_url IS NOT NULL
+          AND o.source_url != ''
+        GROUP BY d.state, d.game_type, d.draw_date,
+                 d.accepted_from_source, d.winning_number, o.source_url
+        HAVING COUNT(DISTINCT d.draw_time) >= 2
+        ORDER BY d.state, d.game_type, d.draw_date
+        """, p).fetchall())
+
+    # Natural repeats query (no URL filter) — informational only.
+    # Rows that also appear in url_rows are the real corruptions; the rest are coincidences.
+    natural_rows = rows_to_dicts(conn.execute(
+        f"""
+        SELECT d.state, d.game_type, d.draw_date,
+               d.accepted_from_source, d.winning_number,
+               COUNT(DISTINCT d.draw_time)                           AS occupied_draw_times,
+               GROUP_CONCAT(DISTINCT d.draw_time ORDER BY d.draw_time) AS draw_times,
+               'natural_repeat' AS repeat_type
+        FROM draws d
+        {dw if dw else ""}
+        GROUP BY d.state, d.game_type, d.draw_date,
+                 d.accepted_from_source, d.winning_number
+        HAVING COUNT(DISTINCT d.draw_time) >= 2
+        ORDER BY d.state, d.game_type, d.draw_date
+        """, p).fetchall())
+
+    # The corruption set is the url_rows (same number + same non-empty URL across slots).
+    # Tag each with is_full_sweep for documentation.
     dt_counts = {
         (r["state"], r["game_type"]): r["dt_count"]
         for r in rows_to_dicts(conn.execute(
             f"""
             SELECT state, game_type, COUNT(DISTINCT draw_time) AS dt_count
-            FROM draws {w}
+            FROM draws {w if w else ""}
             GROUP BY state, game_type
             """, p).fetchall())
     }
 
-    # Now look for same winning_number+source on same date spanning all draw_times
-    all_rows = rows_to_dicts(conn.execute(
-        f"""
-        SELECT state, game_type, draw_date, accepted_from_source, winning_number,
-               COUNT(DISTINCT draw_time)                           AS occupied_draw_times,
-               GROUP_CONCAT(DISTINCT draw_time ORDER BY draw_time) AS draw_times
-        FROM draws {w}
-        GROUP BY state, game_type, draw_date, accepted_from_source, winning_number
-        HAVING COUNT(DISTINCT draw_time) >= 2
-        ORDER BY state, game_type, draw_date
-        """, p).fetchall())
+    for r in url_rows:
+        total = dt_counts.get((r["state"], r["game_type"]), 1)
+        r["total_draw_times_for_game"] = total
+        r["is_full_sweep"] = r["occupied_draw_times"] >= total
 
-    # Flag rows where occupied_draw_times == total draw_times for that state/game
-    suspicious = []
-    for r in all_rows:
-        key = (r["state"], r["game_type"])
-        total_dts = dt_counts.get(key, 1)
-        if r["occupied_draw_times"] >= total_dts:
-            r["total_draw_times_for_game"] = total_dts
-            r["is_full_sweep"] = True
-            suspicious.append(r)
-        elif r["occupied_draw_times"] >= 2:
-            r["total_draw_times_for_game"] = total_dts
-            r["is_full_sweep"] = False
-            suspicious.append(r)
+    # Informational: natural repeats that are NOT in the corruption set.
+    corruption_keys = {
+        (r["state"], r["game_type"], r["draw_date"], r["accepted_from_source"], r["winning_number"])
+        for r in url_rows
+    }
+    natural_only = [
+        r for r in natural_rows
+        if (r["state"], r["game_type"], r["draw_date"],
+            r["accepted_from_source"], r["winning_number"]) not in corruption_keys
+    ]
 
     return CheckResult(
         check_id=15,
         name="suspicious_all_drawtime_duplication_in_draws",
         severity=SEVERITY_CRITICAL,
-        row_count=len(suspicious),
-        rows=suspicious,
+        row_count=len(url_rows),
+        rows=url_rows,
         description=(
-            "Same winning_number from the same source appears in 2+ accepted draws "
-            "for different draw_times on the same date. Full-sweep rows (covering ALL "
-            "draw_times) are the GA lotteryusa pattern of fabricated draws."
+            f"Same winning_number from the same non-empty source_url accepted into 2+ "
+            f"draw_time slots for one state/game/date — the daily-aggregate copy pattern. "
+            f"{len(url_rows)} URL-backed corruption group(s) found. "
+            f"{len(natural_only)} natural same-number coincidence(s) excluded (see "
+            f"same_number_natural_repeats.csv — informational, not corruption)."
         ),
-        ok=len([r for r in suspicious if r.get("is_full_sweep")]) == 0,
+        ok=len(url_rows) == 0,
+        # Stash natural_only for _write_outputs to access via a side-channel attribute.
+        _natural_repeats=natural_only,
     )
 
 
@@ -906,11 +958,18 @@ def _write_outputs(summary: AuditSummary, out_dir: Path, fmt: str) -> None:
         logger.info("  Wrote audit_summary.md")
 
     if do_csv:
-        # duplicate_drawtime_groups.csv — checks 2 + 15
+        # duplicate_drawtime_groups.csv — check 2 observation-layer dups +
+        # check 15 URL-backed corruption rows (active fabrication evidence only).
         c2 = check_map.get(2)
         c15 = check_map.get(15)
         dup_rows = (c2.rows if c2 else []) + (c15.rows if c15 else [])
         write_csv(dup_rows, out_dir / "duplicate_drawtime_groups.csv")
+
+        # same_number_natural_repeats.csv — informational only.
+        # Same number across draw_times but NOT backed by the same source URL.
+        # These are legitimate lottery coincidences; they do not affect overall_status.
+        natural_rows = c15._natural_repeats if c15 else []
+        write_csv(natural_rows, out_dir / "same_number_natural_repeats.csv")
 
         # digit_length_issues.csv — checks 4 + 5
         digit_rows = (check_map[4].rows if 4 in check_map else []) + \
