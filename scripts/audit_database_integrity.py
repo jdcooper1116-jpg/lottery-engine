@@ -152,6 +152,9 @@ def check_2_same_number_across_draw_times_observations(conn, state, game) -> Che
     Groups by source_url (not just source_name) to distinguish genuine daily-aggregate
     duplication (one URL serving all draw_times) from natural coincidence (same number
     drawn at separate slots, each with its own per-draw-time URL).
+
+    Rows where ALL reconciliation statuses are 'anomaly' are treated as archived/resolved
+    evidence and do not trigger CRITICAL — they are flagged all_anomaly=1 in the CSV.
     """
     w, p = _state_game_where(state, game)
     rows = rows_to_dicts(conn.execute(
@@ -165,6 +168,15 @@ def check_2_same_number_across_draw_times_observations(conn, state, game) -> Che
         HAVING draw_time_count >= 2
         ORDER BY state, game_type, draw_date
         """, p).fetchall())
+
+    # Annotate each row: anomaly-only groups are archived, not active conflicts.
+    active_rows = []
+    for r in rows:
+        statuses = set((r.get("statuses") or "").split(","))
+        r["all_anomaly"] = int(statuses <= {"anomaly", ""})
+        if not r["all_anomaly"]:
+            active_rows.append(r)
+
     return CheckResult(
         check_id=2,
         name="same_number_across_draw_times_in_observations",
@@ -175,9 +187,10 @@ def check_2_same_number_across_draw_times_observations(conn, state, game) -> Che
             "Same winning_number from the same source URL appears in 2+ draw_time slots for one date. "
             "Groups by source_url to isolate genuine daily-aggregate duplication "
             "(one URL → multiple draw_times) from natural coincidence "
-            "(same number, different per-draw-time URLs)."
+            "(same number, different per-draw-time URLs). "
+            f"all_anomaly=1 rows are archived; {len(active_rows)} active group(s) flagged."
         ),
-        ok=len(rows) == 0,
+        ok=len(active_rows) == 0,
     )
 
 
@@ -311,7 +324,15 @@ def check_6_leading_zero_risk(conn, state, game) -> CheckResult:
 
 
 def check_7_accepted_with_conflict(conn, state, game) -> CheckResult:
-    """Accepted draws where has_conflict=1 — sources disagree on the canonical number."""
+    """
+    Accepted draws where has_conflict=1 — sources disagree on the canonical number.
+
+    Distinguishes active conflicts (non-anomaly conflict observations still present)
+    from stale conflicts (has_conflict=1 but all conflicting observations are now
+    marked 'anomaly' — the GA lotteryusa cleanup pattern). Stale conflicts are
+    informational and do NOT fail the check; they are candidates for has_conflict=0
+    repair via POST /admin/repair/clear-stale-has-conflict.
+    """
     w, p = _state_game_where(state, game)
     sep = " AND" if w else "WHERE"
     rows = rows_to_dicts(conn.execute(
@@ -319,15 +340,41 @@ def check_7_accepted_with_conflict(conn, state, game) -> CheckResult:
         SELECT d.canonical_key, d.state, d.game_type, d.draw_date, d.draw_time,
                d.winning_number, d.accepted_from_source, d.accepted_source_priority,
                d.observation_count, d.is_verified,
-               GROUP_CONCAT(o.source_name || ':' || o.winning_number, ' | ') AS conflicting_claims
+               -- Active conflict observations (non-anomaly)
+               GROUP_CONCAT(
+                   CASE WHEN o.reconciliation_status = 'conflict'
+                        THEN o.source_name || ':' || o.winning_number END,
+                   ' | ') AS active_conflicting_claims,
+               -- Anomaly observations that were the original conflict source
+               GROUP_CONCAT(
+                   CASE WHEN o.reconciliation_status = 'anomaly'
+                        THEN o.source_name || ':' || o.winning_number END,
+                   ' | ') AS anomaly_claims,
+               COUNT(CASE WHEN o.reconciliation_status = 'conflict' THEN 1 END)
+                   AS active_conflict_count
         FROM draws d
         LEFT JOIN draw_observations o
             ON d.canonical_key = o.canonical_key
-            AND o.reconciliation_status = 'conflict'
+            AND o.reconciliation_status IN ('conflict', 'anomaly')
         {w} {sep} d.has_conflict = 1
         GROUP BY d.canonical_key
         ORDER BY d.state, d.game_type, d.draw_date
         """, p).fetchall())
+
+    active_rows = []
+    stale_rows = []
+    for r in rows:
+        if (r.get("active_conflict_count") or 0) > 0:
+            r["is_stale_conflict"] = False
+            active_rows.append(r)
+        else:
+            r["is_stale_conflict"] = True
+            stale_rows.append(r)
+
+    stale_note = (f" {len(stale_rows)} stale (all anomaly) — "
+                  "safe to clear via /admin/repair/clear-stale-has-conflict."
+                  if stale_rows else "")
+
     return CheckResult(
         check_id=7,
         name="accepted_draws_with_conflict",
@@ -335,10 +382,10 @@ def check_7_accepted_with_conflict(conn, state, game) -> CheckResult:
         row_count=len(rows),
         rows=rows,
         description=(
-            "Draw is marked accepted but has_conflict=1. "
-            "Two or more sources returned different winning numbers for this slot."
+            f"Draw is marked has_conflict=1. {len(active_rows)} active conflict(s) "
+            f"(non-anomaly sources disagree on winning number).{stale_note}"
         ),
-        ok=len(rows) == 0,
+        ok=len(active_rows) == 0,
     )
 
 
@@ -374,7 +421,11 @@ def check_8_observation_bad_status(conn, state, game) -> CheckResult:
 
 
 def check_9_multiple_winning_numbers_per_key(conn, state, game) -> CheckResult:
-    """canonical_key groups with more than one distinct winning_number across all observations."""
+    """
+    canonical_key groups with more than one distinct winning_number across active observations.
+    Excludes reconciliation_status='anomaly' rows — these are archived evidence and have
+    already been resolved. Only non-anomaly observations are counted for CRITICAL detection.
+    """
     w, p = _state_game_where(state, game)
     rows = rows_to_dicts(conn.execute(
         f"""
@@ -387,6 +438,7 @@ def check_9_multiple_winning_numbers_per_key(conn, state, game) -> CheckResult:
         FROM draw_observations o
         LEFT JOIN draws d ON o.canonical_key = d.canonical_key
         {w}
+        {"AND" if w else "WHERE"} o.reconciliation_status != 'anomaly'
         GROUP BY o.canonical_key
         HAVING distinct_numbers > 1
         ORDER BY o.state, o.game_type, o.draw_date
@@ -398,8 +450,9 @@ def check_9_multiple_winning_numbers_per_key(conn, state, game) -> CheckResult:
         row_count=len(rows),
         rows=rows,
         description=(
-            "Two or more distinct winning numbers were observed for the same canonical_key. "
-            "Only one can be correct. The accepted row may be wrong."
+            "Two or more distinct winning numbers from non-anomaly observations for the same canonical_key. "
+            "Only one can be correct. The accepted row may be wrong. "
+            "(Anomaly observations are excluded — they are archived resolved evidence.)"
         ),
         ok=len(rows) == 0,
     )
@@ -868,10 +921,15 @@ def _write_outputs(summary: AuditSummary, out_dir: Path, fmt: str) -> None:
         write_csv(check_map[6].rows if 6 in check_map else [],
                   out_dir / "leading_zero_risk.csv")
 
-        # conflict_rows.csv — checks 7 + 9
-        conflict_rows = (check_map[7].rows if 7 in check_map else []) + \
-                        (check_map[9].rows if 9 in check_map else [])
+        # conflict_rows.csv — active conflicts only (checks 7 active + 9)
+        c7_rows = check_map[7].rows if 7 in check_map else []
+        active_c7 = [r for r in c7_rows if not r.get("is_stale_conflict")]
+        conflict_rows = active_c7 + (check_map[9].rows if 9 in check_map else [])
         write_csv(conflict_rows, out_dir / "conflict_rows.csv")
+
+        # stale_conflict_candidates.csv — has_conflict=1 but all conflict obs are anomaly
+        stale_c7 = [r for r in c7_rows if r.get("is_stale_conflict")]
+        write_csv(stale_c7, out_dir / "stale_conflict_candidates.csv")
 
         # coverage_mismatches.csv — checks 10 + 11
         cov_rows = (check_map[10].rows if 10 in check_map else []) + \

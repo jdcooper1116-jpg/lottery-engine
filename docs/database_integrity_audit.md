@@ -76,7 +76,7 @@ All files are written to `--out-dir` (default `outputs/audits/<timestamp>/`).
 
 | File | Checks | What's in it |
 |------|--------|-------------|
-| `duplicate_drawtime_groups.csv` | 2, 15 | Rows where the same winning number from the same source URL appears in 2+ draw_time slots for one date — the core symptom of a daily-aggregate source being copied into multiple draw-time slots |
+| `duplicate_drawtime_groups.csv` | 2, 15 | Rows where the same winning number from the same source appears in 2+ draw_time slots for one date — the core symptom of the lotteryusa.com GA duplication bug |
 | `digit_length_issues.csv` | 4, 5 | Pick 3 draws where `winning_number` length ≠ 3, and pick 4 draws where length ≠ 4 |
 | `leading_zero_risk.csv` | 6 | Draws where `winning_number` is shorter than expected for the game type — possible `int()` coercion stripping a leading zero (e.g. `"042"` → `"42"`) |
 | `conflict_rows.csv` | 7, 9 | Accepted draws where sources disagreed on the winning number (`has_conflict=1`), and canonical_keys where 2+ distinct numbers were observed |
@@ -96,12 +96,12 @@ All files are written to `--out-dir` (default `outputs/audits/<timestamp>/`).
 | # | Name | What it catches |
 |---|------|----------------|
 | 1 | `duplicate_canonical_keys_in_draws` | `canonical_key` appears more than once in `draws` (UNIQUE constraint violation — should never happen) |
-| 2 | `same_number_across_draw_times_in_observations` | Same `winning_number + source_url` on the same date appears in 2+ `draw_time` slots in `draw_observations` — the classic daily-aggregate source duplication pattern |
+| 2 | `same_number_across_draw_times_in_observations` | Same `winning_number + source_name` on the same date appears in 2+ `draw_time` slots in `draw_observations` — the classic daily-aggregate source duplication pattern |
 | 4 | `pick3_wrong_digit_length` | Pick 3 draw row where `winning_number` length ≠ 3 |
 | 5 | `pick4_wrong_digit_length` | Pick 4 draw row where `winning_number` length ≠ 4 |
 | 6 | `leading_zero_risk` | Pick 3 number with fewer than 3 digits, or pick 4 number with fewer than 4 digits — likely a leading zero stripped by integer coercion |
 | 9 | `multiple_winning_numbers_per_canonical_key` | Two or more distinct winning numbers were ever observed for the same `canonical_key` — only one can be correct |
-| 15 | `suspicious_all_drawtime_duplication_in_draws` | Same `winning_number + accepted_from_source` appears in accepted `draws` rows across 2+ draw_times on one date — review for source-page duplication before trusting the affected state/game |
+| 15 | `suspicious_all_drawtime_duplication_in_draws` | Same `winning_number + accepted_from_source` appears in accepted `draws` rows across 2+ draw_times on one date — means fabricated draws made it into the canonical table |
 
 ### HIGH — Fix before using the affected state/game in production.
 
@@ -303,44 +303,39 @@ curl -sS -X POST https://<your-app>.railway.app/admin/audit/database-integrity \
 
 ---
 
-## Production Audit Artifact Preview Route
+## Anomaly-Aware Audit Behavior
+
+Anomaly observations are quarantined evidence. They remain visible in audit CSVs
+and source reliability summaries, but they are excluded from active conflict
+calculations for CRITICAL/HIGH audit gating. This preserves the historical
+evidence of source/parser problems without allowing already-quarantined rows to
+continue blocking all-state hit detection.
+
+
+---
+
+## Stale Conflict Repair Route
 
 ### Endpoint
 
 ```
-GET /admin/audit/artifact
+POST /admin/repair/clear-stale-has-conflict
 ```
 
 **Auth:** `X-Ingest-Token: <INGEST_ADMIN_TOKEN>` header required.
 
-**Strictly read-only.** This endpoint previews allowed audit artifact files under
-`/data/audits/<audit_id>/` and does not mutate the database.
+This route clears only stale `draws.has_conflict=1` flags where:
+- no active `reconciliation_status='conflict'` observations remain, and
+- at least one `reconciliation_status='anomaly'` observation explains the stale flag.
 
-### Query Parameters
+It does **not** change the accepted winning number, source, draw date, draw time, or any observation rows.
 
-| Parameter | Description |
-|---|---|
-| `audit_id` | Timestamp folder name, for example `20260524T023827Z`. |
-| `filename` | One of the allowed audit artifact filenames. |
-| `limit` | CSV row limit, default 50, max 500. |
-
-Allowed filenames include:
-
-- `audit_summary.json`
-- `audit_summary.md`
-- `repair_queue_candidates.csv`
-- `duplicate_drawtime_groups.csv`
-- `conflict_rows.csv`
-- `observation_bad_status_clusters.csv`
-- `coverage_mismatches.csv`
-- `recent_coverage_gaps.csv`
-- `source_reliability.csv`
-- `latest_coverage_by_state_game_drawtime.csv`
-
-### Example
+### Dry-run example
 
 ```bash
-curl -sS "$BASE/admin/audit/artifact?audit_id=20260524T023827Z&filename=repair_queue_candidates.csv&limit=100" \
+curl -sS -X POST "$BASE/admin/repair/clear-stale-has-conflict" \
+  -H "Content-Type: application/json" \
   -H "X-Ingest-Token: $TOKEN" \
+  -d '{"dry_run":true}' \
   | python3 -m json.tool
 ```

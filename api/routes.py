@@ -274,29 +274,25 @@ def admin_import_observations(
             clean["scraped_at"] = now_utc
             valid_rows.append(clean)
 
-    # De-duplicate repeated rows within the same payload before any DB write.
-    # This protects production when a local DB/export contains repeated
-    # draw_observations from previous ingest/import reruns.
-    in_payload_duplicates = 0
-    seen_payload_keys = set()
-    deduped_valid_rows = []
-    for r in valid_rows:
-        key = (
-            r["canonical_key"],
-            r["source_name"],
-            r["winning_number"],
-            r["source_url"],
-        )
-        if key in seen_payload_keys:
-            in_payload_duplicates += 1
-            continue
-        seen_payload_keys.add(key)
-        deduped_valid_rows.append(r)
-    valid_rows = deduped_valid_rows
-
     rows_received = len(body.rows)
     rows_valid    = len(valid_rows)
     rows_rejected = len(rejected)
+
+    # Deduplicate within the payload itself by (canonical_key, source_name,
+    # winning_number, source_url). draw_observations has no UNIQUE constraint,
+    # so two identical rows in the same payload would both be inserted if we
+    # only check the DB. Track how many in-payload duplicates were dropped.
+    seen_keys: set[tuple] = set()
+    deduped_rows: list[dict] = []
+    in_payload_duplicates = 0
+    for r in valid_rows:
+        sig = (r["canonical_key"], r["source_name"], r["winning_number"], r["source_url"])
+        if sig in seen_keys:
+            in_payload_duplicates += 1
+        else:
+            seen_keys.add(sig)
+            deduped_rows.append(r)
+    valid_rows = deduped_rows
 
     if body.dry_run:
         return {
@@ -349,7 +345,8 @@ def admin_import_observations(
     ]
 
     observations_inserted = 0
-    observations_existing = 0
+    # In-payload duplicates already counted above; DB-existing adds to the total.
+    observations_existing = in_payload_duplicates
 
     with get_connection() as conn:
         # Pre-filter: skip observation rows that already exist with the
@@ -420,7 +417,7 @@ def admin_import_observations(
         "rows_rejected":                     rows_rejected,
         "rejected":                          rejected,
         "observations_inserted":             observations_inserted,
-        "observations_duplicate_or_existing": observations_existing + in_payload_duplicates,
+        "observations_duplicate_or_existing": observations_existing,
         "reconcile_stats":                   reconcile_stats,
         "accepted_after_reconcile":          accepted_sample,
     }
@@ -491,19 +488,11 @@ def admin_audit_database_integrity(
     if out_dir.exists():
         artifact_files = sorted(p.name for p in out_dir.iterdir() if p.is_file())
 
-    repair_queue_count = 0
-    repair_queue_path = out_dir / "repair_queue_candidates.csv"
-    if repair_queue_path.exists():
-        try:
-            # subtract CSV header row
-            repair_queue_count = max(0, sum(1 for _ in repair_queue_path.open("r", encoding="utf-8")) - 1)
-        except Exception:
-            repair_queue_count = 0
-    else:
-        repair_queue_count = sum(
-            c.row_count for c in summary.checks
-            if (not c.ok) and str(c.severity).upper() in {"CRITICAL", "HIGH"}
-        )
+    repair_queue_count = sum(
+        c.row_count
+        for c in summary.checks
+        if not c.ok and c.severity in ("CRITICAL", "HIGH")
+    )
 
     overall_status = "PASS" if summary.overall_ok else (
         "CRITICAL" if summary.critical_count > 0 else "HIGH"
@@ -548,6 +537,7 @@ _ALLOWED_AUDIT_FILES = {
     "recent_coverage_gaps.csv",
     "source_reliability.csv",
     "latest_coverage_by_state_game_drawtime.csv",
+    "stale_conflict_candidates.csv",
 }
 
 _MD_MAX_CHARS = 32_000
@@ -626,6 +616,105 @@ def admin_audit_artifact(
         "filename": filename,
         "truncated": truncated,
         "content":  text[:_MD_MAX_CHARS],
+    }
+
+
+# ------------------------------------------------------------------
+# POST /admin/repair/clear-stale-has-conflict
+# ------------------------------------------------------------------
+
+class ClearStaleConflictBody(BaseModel):
+    canonical_keys: list[str] = Field(
+        default_factory=list,
+        description="Keys to clear. If empty, all verified-stale keys are cleared.",
+    )
+    dry_run: bool = True
+
+
+@app.post("/admin/repair/clear-stale-has-conflict")
+def admin_repair_clear_stale_conflict(
+    body: ClearStaleConflictBody = Body(default_factory=ClearStaleConflictBody),
+    x_ingest_token: Optional[str] = Header(default=None, alias="X-Ingest-Token"),
+):
+    """
+    Clear stale has_conflict=1 flags from draws rows where every conflict
+    observation for that canonical_key has since been marked 'anomaly'.
+    These are safe to clear because no active conflict evidence remains.
+
+    Does NOT modify winning_number, source, or any other draw data.
+    """
+    _require_ingest_token(x_ingest_token)
+
+    from db.connection import get_db_path, get_connection
+
+    db_path = get_db_path()
+
+    with get_connection(db_path) as conn:
+        # Find all draws with has_conflict=1 that have NO active (non-anomaly)
+        # conflict observations remaining.
+        stale_rows = conn.execute(
+            """
+            SELECT d.canonical_key, d.state, d.game_type, d.draw_date, d.draw_time,
+                   d.winning_number, d.accepted_from_source,
+                   COUNT(CASE WHEN o.reconciliation_status = 'conflict' THEN 1 END)
+                       AS active_conflict_count,
+                   COUNT(CASE WHEN o.reconciliation_status = 'anomaly'  THEN 1 END)
+                       AS anomaly_count
+            FROM draws d
+            LEFT JOIN draw_observations o
+                ON d.canonical_key = o.canonical_key
+                AND o.reconciliation_status IN ('conflict', 'anomaly')
+            WHERE d.has_conflict = 1
+            GROUP BY d.canonical_key
+            HAVING active_conflict_count = 0 AND anomaly_count > 0
+            ORDER BY d.state, d.game_type, d.draw_date
+            """
+        ).fetchall()
+
+        stale_keys = [r["canonical_key"] for r in stale_rows]
+
+        # If caller supplied an explicit list, validate each is actually stale.
+        if body.canonical_keys:
+            requested = set(body.canonical_keys)
+            not_stale = requested - set(stale_keys)
+            if not_stale:
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "error": "Some requested keys are NOT stale — they still have active conflict observations.",
+                        "not_stale_keys": sorted(not_stale),
+                    },
+                )
+            target_keys = [k for k in stale_keys if k in requested]
+        else:
+            target_keys = stale_keys
+
+        candidates = [dict(r) for r in stale_rows if r["canonical_key"] in set(target_keys)]
+
+        if body.dry_run or not target_keys:
+            return {
+                "ok":            True,
+                "dry_run":       body.dry_run,
+                "db_path":       db_path,
+                "cleared_count": 0,
+                "would_clear":   len(target_keys),
+                "candidates":    candidates,
+            }
+
+        # Execute the targeted clear — only has_conflict, nothing else.
+        for key in target_keys:
+            conn.execute(
+                "UPDATE draws SET has_conflict = 0 WHERE canonical_key = ? AND has_conflict = 1",
+                (key,),
+            )
+
+    return {
+        "ok":            True,
+        "dry_run":       False,
+        "db_path":       db_path,
+        "cleared_count": len(target_keys),
+        "would_clear":   0,
+        "candidates":    candidates,
     }
 
 
